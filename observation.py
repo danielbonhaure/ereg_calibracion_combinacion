@@ -38,7 +38,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out)},
                     coords={'time': time, lat_name: lat, lon_name: lon})
     #como el resampling trimestral toma el ultimo mes como parametro
-    var_out = ds[variable].resample(time='Q-' + last_month).mean(dim='time')
+    var_out = ds[variable].resample('Q-' + last_month, dim='time', how='mean')
     #selecciono trimestre de interes
     mes = datetime.datetime.strptime(last_month, '%b').month
     var_out = var_out.sel(time=np.logical_and(var_out['time.month'] == mes,
@@ -153,13 +153,13 @@ class Observ(object):
                 mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux), axis=2),
                                                          np.sum(np.isnan(aux), axis=2)
                                                          / (ntimes-1) > 0.15),
-                                           (ntimes-1, 1, 1)), 0, 3)
+                                           (1, 1, ntimes-1)), 0, 3)
                 aux = np.ma.array(aux, mask=mask)
                 A = np.ma.sort(aux, axis=-1)
                 lower = A[:, :, np.int(np.round((ntimes - 1) / 3) - 1)]
                 upper = A[:, :, np.int(np.round((ntimes - 1) / 3 * 2) - 1)]
                 lower = lower.filled(np.nan)
-                upper = upper.filled(np.nan)
+                upper = lower.filled(np.nan)
                 return lower, upper
 
             res = p.map(cal_terciles, i.tolist())

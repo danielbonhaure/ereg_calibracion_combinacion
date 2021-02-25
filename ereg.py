@@ -25,7 +25,7 @@ def ensemble_regression(forecast, observation, CV_opt):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 obs_c = np.nanmean(obs[CV_m[:, i], :, :], axis=0)
-            em_c = np.nanmean(np.nanmean(forec[CV_m[:, i], :, :, :], axis=1),
+            em_c = np.nanmean(np.mean(forec[CV_m[:, i], :, :, :], axis=1),
                            axis=0)
             return obs_c, em_c
         res = p.map(compute_clim, i.tolist())
@@ -39,29 +39,28 @@ def ensemble_regression(forecast, observation, CV_opt):
         em_c = np.nanmean(np.mean(forecast, axis=1), axis=0)
 
     em = np.nanmean(forecast, axis=1)
-    signal = np.nansum(np.power(em - em_c, 2), axis=0) / ntimes
+    signal = np.nanmean(np.power(em - em_c, 2), axis=0)
     noise = np.nanmean(np.nanvar(forecast, axis=1), axis=0) #noise
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
-        obs_var = np.nansum(np.power(observation - obs_c, 2), axis=0) / ntimes
+        obs_var = np.nanmean(np.power(observation - obs_c, 2), axis=0)
         Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(obs_var * signal)
     #Rbest = Rm sqrt( 1 + (m/(m - 1) * N) /S )
     Rbest = Rm * np.sqrt(1 + (nmembers / (nmembers - 1) * noise) / signal)
     #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
     epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
-    epsbn = np.ma.array(epsbn, mask=~np.isfinite(epsbn))
     #kmax**2 S/N * (m-1/m) * (1/R**2-1)
     kmax = signal / noise * (((nmembers - 1)/nmembers) *
                              (1 / np.power(Rm, 2) - 1))
-    kmax = np.ma.array(kmax, mask=~np.isfinite(kmax))
 
     # si kmax es amayor a 1 lo fuerzo a que sea 1
-    kmax = np.ma.where(kmax <= 1, kmax, 1)
+    kmax[kmax > 1] = 1
     #testeo
-    K = np.ones_like(kmax)
-    K = np.ma.array(K, mask=~np.isfinite(epsbn))
+    K = np.zeros_like(epsbn)
+    #if epsbn is positive spread remains the same
+    K[epsbn >= 0] = 1
     #if epsbn is negative spread changes
-    K = np.ma.where(epsbn>=0, K, kmax)
+    K[epsbn < 0] = kmax[epsbn < 0]
     K = np.repeat(np.repeat(K[np.newaxis, :, :], nmembers,
                             axis=0)[np.newaxis, :, :, :], ntimes,
                   axis=0)
@@ -89,7 +88,7 @@ def ensemble_regression(forecast, observation, CV_opt):
         CV_matrix = np.logical_not(np.identity(ntimes))
         def ens_reg(i, l, j, k, CV_m=CV_matrix, obs=observation, forec=forecast_inf):
             if np.logical_or(np.isnan(obs[:, j, k]).all(),
-                             np.sum(np.isnan(obs[:, j, k])) / obs.shape[0] > 0.15):
+                             np.sum(np.isnan(obs[:, j, k]) / obs.shape[0]) > 0.15):
                 for_cr = np.nan
             else:
                 missing = np.isnan(obs[:, j, k])
@@ -145,7 +144,7 @@ def probabilidad_terciles(forecast, epsilon, tercil):
         p = Pool (CORES)
         p.clear()
         def evaluo_pdf_normal(i, l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-            if np.logical_or(np.logical_or(np.isnan(tercil[:, i, j, k]).any(),
+            if np.logical_or(np.logical_or(np.isnan(terc[:, i, j, k]).any(),
                                            np.isnan(media[i, l, j, k])),
                              np.isnan(sigma[j, k])):
                 pdf_cdf = np.array([np.nan, np.nan])

@@ -147,7 +147,7 @@ def main(args):
         weight = np.tile(peso, (2, 1, 1, 1)) #2 nlat nlon nmodels
 
     elif args.wtech[0] == 'mean_cor':
-        rmean[np.where(np.logical_and(rmean < 0, ~np.isnan(rmean)))] = 0
+        rmean[np.where(rmean < 0)] = 0
         rmean[np.nansum(rmean[:, :, :], axis=2) == 0, :] = 1
         peso = rmean / np.tile(np.nansum(rmean, axis=2)[:, :, np.newaxis], [1, 1, nmodels])
         weight = np.tile(peso, (2, 1, 1, 1))  #2 nlat nlon nmodels
