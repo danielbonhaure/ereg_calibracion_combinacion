@@ -18,7 +18,7 @@ import sys
 import cdo
 import netCDF4
 import numpy as np
-import pathlib
+from pathlib import Path
 
 cfg = configuration.Config.Instance()
 
@@ -76,8 +76,8 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
       for member in range(1, model_data.members+1, 1): 
         for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
           for month in range(1, 12+1, 1):
-            FOLDER = pathlib.Path(cfg.get('folders').get('download_folder'),
-                                  cfg.get('folders').get('nmme').get('hindcast'))
+            FOLDER = Path(cfg.get('folders').get('download_folder'),
+                          cfg.get('folders').get('nmme').get('hindcast'))
             DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
             DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), variable, recheck) if not redownload else False
@@ -92,8 +92,8 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1): 
         for month in range(1, now.month+1 if year == now.year else 12+1, 1):
-          FOLDER = pathlib.Path(cfg.get('folders').get('download_folder'),
-                                cfg.get('folders').get('nmme').get('real_time'))
+          FOLDER = Path(cfg.get('folders').get('download_folder'),
+                        cfg.get('folders').get('nmme').get('real_time'))
           DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
           DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), variable, recheck) if not redownload else False
@@ -106,8 +106,8 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1): 
-        FOLDER = pathlib.Path(cfg.get('folders').get('download_folder'),
-                              cfg.get('folders').get('nmme').get('real_time'))
+        FOLDER = Path(cfg.get('folders').get('download_folder'),
+                      cfg.get('folders').get('nmme').get('real_time'))
         DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
         DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), variable, recheck) if not redownload else False
@@ -117,8 +117,8 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
 
 def links_to_download_observation(recheck, redownload):
   #
-  FOLDER = pathlib.Path(cfg.get('folders').get('download_folder'),
-                        cfg.get('folders').get('nmme').get('root'))
+  FOLDER = Path(cfg.get('folders').get('download_folder'),
+                cfg.get('folders').get('nmme').get('root'))
   #
   FILENAME = "prec_monthly_nmme_cpc.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.CPC-CMAP-URD/.prate/data.nc"
