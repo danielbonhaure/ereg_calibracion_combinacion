@@ -39,11 +39,11 @@ with CronTab(user=user_name) as cron:
     if not list(cron.find_command(py_command)):
         download_job = cron.new(command=f'conda activate {conda_env} && {py_command} && conda deactivate',
                                 comment='Download files from IRIDL')
-        download_job.day.on(5,7,9)
+        download_job.day.on(15,16)
 
     py_command = f'cd {file_path} && python run_operational_forecast.py'
     if not list(cron.find_command(py_command)):
         forecast_job = cron.new(command=f'conda activate {conda_env} && {py_command} && conda deactivate',
                                 comment='Run operational forecast')
-        forecast_job.day.on(15)
+        forecast_job.day.on(17)
 
