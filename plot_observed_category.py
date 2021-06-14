@@ -8,6 +8,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+from pathlib import Path
 import configuration
 
 cfg = configuration.Config.Instance()
@@ -26,8 +27,8 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
 def main(args):
     """Plot observed category"""
 
-    PATH = cfg.get('download_folder')
-    lsmask = PATH + "NMME/lsmask.nc"
+    PATH = cfg.get('folders').get('download_folder')
+    lsmask = Path(PATH, cfg.get('folders').get('nmme').get('root'), 'lsmask.nc')
     coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
@@ -39,11 +40,10 @@ def main(args):
     year_verif = 1982 if (seas[0] > 1 and seas[0] < 11) else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     #obtengo datos observados
-    RUTA = PATH + 'DATA/Observations/'
-    RUTA_FIG = PATH + 'FIGURES/'
-    archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS +\
-            '.npz'
-    data = np.load(RUTA + archivo)
+    RUTA = Path(PATH, cfg.get('folders').get('data').get('observations'))
+    RUTA_FIG = Parth(PATH, cfg.get('folders').get('figures').get('observations'))
+    archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz'
+    data = np.load(Path(RUTA, archivo))
     obs_terciles = data['cat_obs']
     nlats = obs_terciles.shape[2]
     nlons = obs_terciles.shape[3]
@@ -64,8 +64,7 @@ def main(args):
                                                    [165., 15., 21.]]) / 256)
 
     for k in np.arange(year_verif, 2011):
-        output = RUTA_FIG + 'obs_' + args.variable[0] + '_' + SSS + '_' + str(k)\
-                + '.png'
+        output = Path(RUTA_FIG, 'obs_' + args.variable[0] + '_' + SSS + '_' + str(k) + '.png')
         obs_cat = obs_terciles[:, k - year_verif, :, :]
         obs[obs_cat[1, :, :] == 1] = 1
         obs[obs_cat[2, :, :] == 1] = 2

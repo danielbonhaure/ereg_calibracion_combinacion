@@ -9,8 +9,8 @@ setuptools.setup(
     author="Marisol Osman",
     author_email="osman@cima.fcen.uba.ar",
     description="Package to run seasonal prob forecast",
-    long_description="Calibration and combination of NMME temperature and precipitation
-    forecast through ensemble regression",
+    long_description="Calibration and combination of NMME temperature and precipitation "
+                     "forecast through ensemble regression",
     long_description_content_type="text/markdown",
     url="https://github.com/marisolosman/ereg_calibracion_combinacion",
     packages=setuptools.find_packages(),

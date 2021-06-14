@@ -14,6 +14,7 @@ mpl.use('agg')
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+from pathlib import Path
 import configuration
 
 cfg = configuration.Config.Instance()
@@ -145,15 +146,15 @@ def main(args):
                             [222., 45., 38.], [165., 15., 21.]]) / 255
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
-    PATH = cfg.get('download_folder')
-    lsmask = PATH + "NMME/lsmask.nc"
+    PATH = cfg.get('folders').get('download_folder')
+    lsmask = Parth(PATH, cfg.get('folders').get('nmme').get('root'), 'lsmask.nc')
     coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    RUTA = PATH + 'DATA/combined_forecast/'
-    RUTA_IM = PATH + 'FIGURES/'
+    RUTA = Parth(PATH, cfg.get('folders').get('data').get('combined_forecasts'))
+    RUTA_IM = Parth(PATH, cfg.get('folders').get('figures').get('combined_forecasts'))
     for i in ctech:
         for j in wtech:
             archivo = args.variable[0] + '_mme_' + month +'_' + \
@@ -167,8 +168,8 @@ def main(args):
             lone = np.max(lon)
             [dx, dy] = np.meshgrid(lon, lat)
             for k in np.arange(year_verif, 2011, 1):
-                output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_'\
-                        + month + '_' + str(k) + '_' + i + '_' + j + '.png'
+                output = Path(RUTA_IM, 'for_' + args.variable[0] + '_' + SSS + '_ic_' +
+                              month + '_' + str(k) + '_' + i + '_' + j + '.png')
                 for_terciles = np.squeeze(data['prob_terc_comb'][:, k - 1982, :, :])
                 if args.variable[0] == 'prec':
                     #agrego el prono de la categoria above normal
@@ -201,9 +202,8 @@ def main(args):
                                  cmap, colores, SSS + ' Forecast IC ' +\
                                  month + '-' + str(k) + ' - ' + i + '-' + j, output)
 
-    archivo = args.variable[0] + '_mme_' + month + '_' + SSS + \
-            '_gp_01_same_count_hind.npz'
-    data = np.load(RUTA + archivo)
+    archivo = args.variable[0] + '_mme_' + month + '_' + SSS + '_gp_01_same_count_hind.npz'
+    data = np.load(Path(RUTA, archivo))
     lat = data['lat']
     lon = data['lon']
     lats = np.min(lat)
@@ -212,8 +212,7 @@ def main(args):
     lone = np.max(lon)
     [dx, dy] = np.meshgrid (lon, lat)
     for k in np.arange(1982, 2011, 1):
-        output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_' + \
-                month + '_' + str(k) + '_count.png'
+        output = Path(RUTA_IM, 'for_' + args.variable[0] + '_' + SSS + '_ic_' + month + '_' + str(k) + '_count.png')
         for_terciles = np.squeeze(data['prob_terc_comb'][:, k-1982, :, :])
         #agrego el prono de la categoria above normal
         for_terciles = np.concatenate([for_terciles[0, :, :][:, :, np.newaxis],

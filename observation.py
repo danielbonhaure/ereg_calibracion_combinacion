@@ -14,13 +14,14 @@ import xarray as xr
 import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 from pandas.tseries.offsets import *
+from pathlib import Path
 import configuration
 
 cfg = configuration.Config.Instance()
 
 CORES = mp.cpu_count()
-PATH = cfg.get("download_folder")
-ruta = PATH + 'NMME/'
+PATH = cfg.get("folders").get("download_folder")
+ruta = Path(PATH, cfg.get("folders").get("nmme").get("root"))
 hind_length = 28
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -67,7 +68,7 @@ class Observ(object):
         """computes seasonal mean"""
         message = "seasonal mean"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
-        file = ruta + self.var_name + '_monthly_nmme_' + self.institution +'.nc'
+        file = Path(ruta, self.var_name + '_monthly_nmme_' + self.institution +'.nc')
         [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
                                                          self.lat_name,
                                                          self.lon_name, lats,

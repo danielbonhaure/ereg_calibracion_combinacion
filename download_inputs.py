@@ -18,6 +18,7 @@ import sys
 import cdo
 import netCDF4
 import numpy as np
+import pathlib
 
 cfg = configuration.Config.Instance()
 
@@ -75,11 +76,12 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
       for member in range(1, model_data.members+1, 1): 
         for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
           for month in range(1, 12+1, 1):
-            FOLDER = f"{cfg.get('download_folder')}/NMME/hindcast/".replace("//","/")
+            FOLDER = pathlib.Path(cfg.get('folders').get('download_folder'),
+                                  cfg.get('folders').get('nmme').get('hindcast'))
             DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
-            DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
-            yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
+            DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), variable, recheck) if not redownload else False
+            yield {'FILENAME': Path(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
                    'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'hindcast', 'VARIABLE': variable}
 
 
@@ -90,11 +92,12 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1): 
         for month in range(1, now.month+1 if year == now.year else 12+1, 1):
-          FOLDER = f"{cfg.get('download_folder')}/NMME/real_time/".replace("//","/")
+          FOLDER = pathlib.Path(cfg.get('folders').get('download_folder'),
+                                cfg.get('folders').get('nmme').get('real_time'))
           DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
-          DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
-          yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
+          DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), variable, recheck) if not redownload else False
+          yield {'FILENAME': Path(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
                  'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'operational', 'VARIABLE': variable}
 
 
@@ -103,34 +106,36 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1): 
-        FOLDER = f"{cfg.get('download_folder')}/NMME/real_time/".replace("//","/")
+        FOLDER = pathlib.Path(cfg.get('folders').get('download_folder'),
+                              cfg.get('folders').get('nmme').get('real_time'))
         DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
-        DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
-        yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
+        DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), variable, recheck) if not redownload else False
+        yield {'FILENAME': Path(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
                'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'real_time', 'VARIABLE': variable}
 
 
 def links_to_download_observation(recheck, redownload):
   #
-  FOLDER = f"{cfg.get('download_folder')}/NMME/".replace("//","/")
+  FOLDER = pathlib.Path(cfg.get('folders').get('download_folder'),
+                        cfg.get('folders').get('nmme').get('root'))
   #
   FILENAME = "prec_monthly_nmme_cpc.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.CPC-CMAP-URD/.prate/data.nc"
-  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, 'prec', recheck) if not redownload else False
-  yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
+  DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), 'prec', recheck) if not redownload else False
+  yield {'FILENAME': Path(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'prec'}
   #
   FILENAME = "tref_monthly_nmme_ghcn_cams.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.GHCN_CAMS/.updated/data.nc"
-  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, 'tref', recheck) if not redownload else False
-  yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
+  DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), 'tref', recheck) if not redownload else False
+  yield {'FILENAME': Path(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'tref'}
   #
   FILENAME = "lsmask.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.LSMASK/.land/data.nc"
-  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, 'land', recheck) if not redownload else False
-  yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
+  DOWNLOAD_STATUS = check_file(Path(FOLDER, FILENAME), 'land', recheck) if not redownload else False
+  yield {'FILENAME': Path(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'land'}
 
 

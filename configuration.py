@@ -171,34 +171,38 @@ class Config():
     def _setup_directory_tree(self):
         """Create directories to storage data (if needed)"""
 
-        download_folder = self.get('download_folder')
+        download_folder = self.get('folders').get('download_folder')
         if not os.access(pathlib.Path(download_folder).parent, os.W_OK):
             err_msg = f"{pathlib.Path(download_folder).parent} is not writable"
             raise InvalidConfiguration(err_msg)
         pathlib.Path(download_folder)\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(download_folder, 'NMME', 'hindcast'))\
+        pathlib.Path(os.path.join(download_folder, self.get('folders').get('nmme').get('hindcast')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(download_folder, 'NMME', 'real_time'))\
+        pathlib.Path(os.path.join(download_folder, self.get('folders').get('nmme').get('real_time')))\
           .mkdir(parents=True, exist_ok=True)
 
-        gen_data_folder = self.get('gen_data_folder')
+        gen_data_folder = self.get('folders').get('gen_data_folder')
         if not os.access(pathlib.Path(gen_data_folder).parent, os.W_OK):
             err_msg = f"{pathlib.Path(gen_data_folder).parent} is not writable"
             raise InvalidConfiguration(err_msg)
         pathlib.Path(gen_data_folder)\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'Observations'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('observations')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'calibrated_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('calibrated_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'combined_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('combined_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'real_time_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('real_time_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'hindcast_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('hindcast_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'FIGURES'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('figures').get('observations')))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('figures').get('combined_forecasts')))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('figures').get('real_time_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
     
     def _check_file_group(self):

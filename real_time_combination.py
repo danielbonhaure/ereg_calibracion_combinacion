@@ -39,7 +39,7 @@ def main(args):
     
     modelos = df_modelos.to_dict('records')
 
-    PATH = cfg.get("gen_data_folder")
+    PATH = cfg.get("folders").get("gen_data_folder")
     
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
@@ -65,7 +65,7 @@ def main(args):
               ' Target season:' + SSS + ' ' + args.ctech + ' ' + args.wtech[0]
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     #obtengo datos observados
-    archivo = Path(PATH +  'DATA/Observations/obs_' + args.variable[0]+'_'+\
+    archivo = Path(PATH, cfg.get('folders').get('data').get('observations'), 'obs_' + args.variable[0]+'_'+\
                    str(year_verif) + '_' + SSS + '_parameters.npz')
     data = np.load(archivo)
     terciles = data['terciles']
@@ -92,10 +92,10 @@ def main(args):
         vacio = np.sum(empty_forecast) == pronos.shape[0]
         if not(vacio):
             #abro archivo modelo
-            archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
-                       args.variable[0] + '_' + it['nombre'] + '_' +\
-                       calendar.month_abbr[inim] + '_' + SSS +\
-                       '_gp_01_hind_parameters.npz')
+            archivo = Path(PATH, cfg.get('folders').get('data').get('calibrated_forecasts'),
+                           args.variable[0] + '_' + it['nombre'] + '_' +\
+                           calendar.month_abbr[inim] + '_' + SSS +\
+                           '_gp_01_hind_parameters.npz')
             data = np.load(archivo)
             a1 = data['a1']
             b1 = data['b1']
@@ -170,7 +170,7 @@ def main(args):
         prob_terc_comb = np.nansum(weight * prob_terciles, axis=3)
     elif args.ctech == 'wsereg':
         weight = weight[0, :, :, :] / nmembers
-        archivo = Path(PATH + 'DATA/combined_forecasts/' +\
+        archivo = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'),
                        args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                        '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech +\
                        '_hind_parameters.npz')
@@ -197,7 +197,7 @@ def main(args):
         prob_terc_comb = np.nanmean(prob_terc, axis=1)
 
     #guardo los pronos
-    archivo = Path(PATH + 'DATA/real_time_forecasts/' +\
+    archivo = Path(PATH, cfg.get('folders').get('data').get('real_time_forecasts'),
                    args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                    str(iniy) + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' +\
                    args.ctech + '.npz')

@@ -6,16 +6,37 @@ use_logger: !!bool "true"
 group_for_files: ereg
 
 # folders in which the data will be saved
-download_folder: /data/ereg/descargas/
-# Si algunos miembros del real-time del CFSv2 del pentad_samples se bajan mal, 
-# una solución pude ser bajar los miembros problemáticos pero del early monthly samples. 
-# En esos casos, hay que: 
-# 1- Cambiar los urls del CFSv2: cambiar ".PENTAD_SAMPLES" por ".EARLY_MONTH_SAMPLES". 
-# 2- Cambiar la carpeta de descarga: cambiar "download_folder: /data/ereg/descargas/" por "download_folder: /data/ereg/descargas_cfs_early_month_samples/"
-# Una vez bajados los archivos problemáticos, pegarlos en la carpeta correcta de descarga (/data/ereg/descargas/). 
-# Carpeta de descarga alternativa para miembros problemáticos:
-#download_folder: /data/ereg/descargas_cfs_early_month_samples/
-gen_data_folder: /data/ereg/generados/
+folders:
+  # TREE (ereg root folders)
+  download_folder: /data/ereg/
+  # Si algunos miembros del real-time del CFSv2 del pentad_samples se bajan mal,  una solución pude ser bajar los
+  # miembros problemáticos pero del early monthly samples. En esos casos, hay que:
+  # 1- Cambiar los urls del CFSv2: cambiar ".PENTAD_SAMPLES" por ".EARLY_MONTH_SAMPLES".
+  # 2- Cambiar la carpeta de descarga: cambiar "download_folder: /data/ereg/" por
+  # "download_folder: /data/ereg/descargas_cfs_early_month_samples/"
+  # 3- Una vez bajados los archivos problemáticos, pegarlos en la carpeta correcta de descarga (/data/ereg).
+  # Carpeta de descarga alternativa para miembros problemáticos:
+  # download_folder: /data/ereg/descargas_cfs_early_month_samples/
+  gen_data_folder: /data/ereg/
+  # NMME (contains downloaded data):
+  nmme:
+    root: NMME
+    hindcast: NMME/hindcast
+    real_time: NMME/real_time
+  # DATA (contains generated data):
+  data:
+    root: DATA
+    observations: DATA/Observations
+    calibrated_forecasts: DATA/calibrated_forecasts
+    combined_forecasts: DATA/combined_forecasts
+    real_time_forecasts: DATA/real_time_forecasts
+    hindcast_forecasts: DATA/hindcast_forecasts
+  # FIGURES (contains generated data):
+  figures:
+    root: FIGURES
+    observations: FIGURES
+    combined_forecasts: FIGURES
+    real_time_forecasts: FIGURES
 
 # domain coordinates: lat south, lat north, lon west, lon east
 coords:
