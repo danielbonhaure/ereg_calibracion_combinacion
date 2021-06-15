@@ -97,8 +97,9 @@ class Config():
     
     @property
     def _is_there_comb_forecasts(self):
-        gen_data_folder = self.config.get('gen_data_folder')
-        PATH = f"{gen_data_folder}/nmme_output/comb_forecast/*".replace("//","/")
+        gen_data_folder = self.config.get('folders').get('gen_data_folder')
+        comb_forecasts = self.config.get('folders').get('data').get('combined_forecasts')
+        PATH = f"{gen_data_folder}/{comb_forecasts}/*".replace("//","/")
         return any(glob.glob(PATH))
     
     @property
@@ -111,8 +112,9 @@ class Config():
             return f.read().strip().split("\n")
     
     def _delete_combined_forecasts(self):
-        gen_data_folder = self.config.get('gen_data_folder')
-        PATH = f"{gen_data_folder}/nmme_output/comb_forecast/*".replace("//","/")
+        gen_data_folder = self.config.get('folders').get('gen_data_folder')
+        comb_forecasts = self.config.get('folders').get('data').get('combined_forecasts')
+        PATH = f"{gen_data_folder}/{comb_forecasts}/*".replace("//","/")
         for filename in glob.glob(PATH):
             os.remove(filename)
     
@@ -243,6 +245,9 @@ class Config():
 
     def report_input_file_used(self, file_abs_path):
         """Report input files used by the last run"""
+        
+        if type(file_abs_path) != str:
+            file_abs_path = str(file_abs_path)
         
         if file_abs_path.endswith('\n'):
             file_abs_path = file_abs_path.replace('\n', '')
