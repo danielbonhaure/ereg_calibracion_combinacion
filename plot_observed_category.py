@@ -41,7 +41,7 @@ def main(args):
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     #obtengo datos observados
     RUTA = Path(PATH, cfg.get('folders').get('data').get('observations'))
-    RUTA_FIG = Parth(PATH, cfg.get('folders').get('figures').get('observations'))
+    RUTA_FIG = Path(PATH, cfg.get('folders').get('figures').get('observations'))
     archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz'
     data = np.load(Path(RUTA, archivo))
     obs_terciles = data['cat_obs']

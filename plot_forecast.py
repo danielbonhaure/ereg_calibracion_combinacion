@@ -147,14 +147,14 @@ def main(args):
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
     PATH = cfg.get('folders').get('download_folder')
-    lsmask = Parth(PATH, cfg.get('folders').get('nmme').get('root'), 'lsmask.nc')
+    lsmask = Path(PATH, cfg.get('folders').get('nmme').get('root'), 'lsmask.nc')
     coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    RUTA = Parth(PATH, cfg.get('folders').get('data').get('combined_forecasts'))
-    RUTA_IM = Parth(PATH, cfg.get('folders').get('figures').get('combined_forecasts'))
+    RUTA = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'))
+    RUTA_IM = Path(PATH, cfg.get('folders').get('figures').get('combined_forecasts'))
     for i in ctech:
         for j in wtech:
             archivo = args.variable[0] + '_mme_' + month +'_' + \

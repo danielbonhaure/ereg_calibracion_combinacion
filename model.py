@@ -64,13 +64,13 @@ class Model(object):
         #loop sobre los anios del hindcast period
         for i in np.arange(self.hind_begin, self.hind_end+1):
             for j in np.arange(1, self.ensembles + 1):
-                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                file = self.var_name + '_Amon_' + self.institution + '-' +\
                         self.name + '_' + str(i)\
                         + '{:02d}'.format(init_cond) + '_r' + str(j) + '_' + str(i) +\
                         '{:02d}'.format(init_cond) + '-' + str(i + flag_end) + '{:02d}'.format(
                             final_month) + '.' + self.ext
 
-                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
                                                                  self.lat_name, self.lon_name,
                                                                  lats, latn, lonw, lone)
 
@@ -251,13 +251,13 @@ class Model(object):
         if ((init_year == 2011) & (init_month <=11)) & (self.var_name == 'prec')  &\
            (self.name == 'CFSv2'):
             for j in np.arange(1, self.ensembles + 1):
-                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                file = self.var_name + '_Amon_' + self.institution + '-' +\
                         self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
                         '_r' + str(j) + '_' + str(init_year) +\
                         '{:02d}'.format(init_month) + '-' + str(init_year +\
                                                                 flag_end) +\
                         '{:02d}'.format(final_month) + '.' + self.ext
-                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
                                                                  self.lat_name, self.lon_name,
                                                                  lats, latn, lonw, lone)
                 forecast[j - 1, :, :] = np.nanmean(np.squeeze(variable)[init_month - 4,
@@ -270,13 +270,13 @@ class Model(object):
                                         (self.name != 'GMAO'))) |\
            ((self.var_name == 'prec') & ((self.name != 'CCSM3') &  (self.name != 'GMAO')))):
             for j in np.arange(1, self.ensembles + 1):
-                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                file = self.var_name + '_Amon_' + self.institution + '-' +\
                         self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
                         '_r' + str(j) + '_' + str(init_year) +\
                         '{:02d}'.format(init_month) + '-' + str(init_year +\
                                                                 flag_end) +\
                         '{:02d}'.format(final_month) + '.' + self.ext
-                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
                                                                  self.lat_name, self.lon_name,
                                                                  lats, latn, lonw, lone)
                 forecast[j - 1, :, :] = np.nanmean(np.squeeze(variable)[init_month - 1,
@@ -284,13 +284,13 @@ class Model(object):
                                                                         : , :], axis=0)
         elif (init_year == 2011) & (init_month>=8) & (init_month <=9) & (self.name != 'GMAO'):
             for j in np.arange(1, self.ensembles + 1):
-                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                file = self.var_name + '_Amon_' + self.institution + '-' +\
                         self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
                         '_r' + str(j) + '_' + str(init_year) +\
                         '{:02d}'.format(init_month) + '-' + str(init_year +\
                                                                 flag_end) +\
                         '{:02d}'.format(final_month) + '.' + self.ext
-                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
                                                                  self.lat_name,
                                                                  self.lon_name, lats,
                                                                  latn, lonw, lone)
@@ -302,13 +302,13 @@ class Model(object):
         #((self.name == 'CCSM3') | (self.name == 'FLOR-B01') |\
         #                                      (self.name == 'CanCM4') | (self.name == 'CM2p1'))):
             for j in np.arange(1, self.ensembles + 1):
-                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                file = self.var_name + '_Amon_' + self.institution + '-' +\
                         self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
                         '_r' + str(j) + '_' + str(init_year) +\
                         '{:02d}'.format(init_month) + '-' + str(init_year +\
                                                                 flag_end) +\
                         '{:02d}'.format(final_month) + '.' + self.ext
-                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
                                                                  self.lat_name,
                                                                  self.lon_name, lats,
                                                                  latn, lonw, lone)
@@ -317,13 +317,13 @@ class Model(object):
                                                                         : , :], axis=0)
         else:
             for j in np.arange(1, self.ensembles + 1):
-                file = ruta + self.var_name + '_Amon_' + self.institution + '-' + self.name + '_'\
+                file = self.var_name + '_Amon_' + self.institution + '-' + self.name + '_'\
                         + str(init_year) + '{:02d}'.format(init_month) + '_r' +\
                         str(j) + '_' + str(init_year) +\
                         '{:02d}'.format(init_month) + '-' + str(init_year +\
                                                                 flag_end) +\
                         '{:02d}'.format(final_month) + '.' + self.ext
-                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
                                                                  self.lat_name, self.lon_name,
                                                                  lats, latn, lonw, lone)
                 with warnings.catch_warnings():
