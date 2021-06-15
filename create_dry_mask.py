@@ -13,7 +13,7 @@ import configuration
 cfg = configuration.Config.Instance()
 
 CORES = mp.cpu_count()
-PATH = cfg.get('folders').get("download_folder")
+PATH = cfg.get('folders').get('download_folder')
 ruta = Path(PATH, cfg.get('folders').get('nmme').get('root'))
 hind_length = 28
 
@@ -47,4 +47,5 @@ ds3m = ds3m.groupby('time.month').mean(skipna=True)
 #create dry mask: seasonal precipitation less than 30mm/month
 ds3m[variable] = ds['prec'] <=30
 
+PATH = cfg.get('folders').get('gen_data_folder')
 ds3m.to_netcdf(Path(PATH, cfg.get('folders').get('data').get('root'), 'dry_mask.nc'))

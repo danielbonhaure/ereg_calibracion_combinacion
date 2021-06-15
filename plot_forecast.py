@@ -153,6 +153,7 @@ def main(args):
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
+    PATH = cfg.get('folders').get('gen_data_folder')
     RUTA = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'))
     RUTA_IM = Path(PATH, cfg.get('folders').get('figures').get('combined_forecasts'))
     for i in ctech:

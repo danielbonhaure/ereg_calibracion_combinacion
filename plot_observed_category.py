@@ -40,6 +40,7 @@ def main(args):
     year_verif = 1982 if (seas[0] > 1 and seas[0] < 11) else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     #obtengo datos observados
+    PATH = cfg.get('folders').get('gen_data_folder')
     RUTA = Path(PATH, cfg.get('folders').get('data').get('observations'))
     RUTA_FIG = Path(PATH, cfg.get('folders').get('figures').get('observations'))
     archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz'
