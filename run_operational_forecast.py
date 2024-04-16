@@ -4,6 +4,7 @@
 # El resultado de la calibración sin cross-validation se usa para la combinación en tiempo real "real_time_combination.py"
 # El resultado de la calibración con cross-validation se usa para la combinación general "combination.py"
 
+import os
 import argparse  # parse command line options
 import time  # test time consummed
 import configuration
@@ -11,9 +12,13 @@ import itertools
 import datetime
 
 from calibration import main as calibration
+from calibration_sissa import main as calibration_sissa
 from get_mme_parameters import main as get_mme_parameters
 from real_time_combination import main as real_time_combination
+from real_time_combination_sissa import main as real_time_combination_sissa
 from plot_rt_forecast import main as plot_rt_forecast
+from plot_sissa_forecast import main as plot_sissa_forecast
+from create_output_files_descriptor import main as create_descriptors
 
 cfg = configuration.Config.Instance()
 
@@ -26,6 +31,12 @@ def main(args):
                 for m in range(1, 12+1) if not args.month else [args.month]:  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)
                     calibration(argparse.Namespace(variable=[v], IC=[m], leadtime=[l], CV=args.cross_validate,
                                                    OW=args.overwrite, no_models=args.no_models, models=args.models))
+        cfg.logger.info("Starting calibration SISSA")
+        for v in args.variables:  # loop sobre las variables a calibrar
+            for m in range(1, 12+1) if not args.month else [args.month]:  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)
+                for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
+                    calibration_sissa(argparse.Namespace(variable=[v], IC=[m], leadtime=[l], CV=args.cross_validate,
+                                                         OW=args.overwrite))
 
     if args.mme_param_gen:
         cfg.logger.info("Starting mme parameters generation")
@@ -42,16 +53,44 @@ def main(args):
                 for c, w in itertools.product(args.combination, args.weighting): 
                     real_time_combination(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], 
                                                              leadtime=[l], no_models=[], ctech=c, wtech=[w]))
+        cfg.logger.info("Starting combination SISSA")
+        for v in args.variables:  # loop sobre las variables a calibrar
+            for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
+                for c, w in itertools.product(args.combination, args.weighting):
+                    real_time_combination_sissa(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"],
+                                                                   leadtime=[l], no_models=[], ctech=c, wtech=[w]))
   
     if args.plot:
         cfg.logger.info("Starting plotting")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
-                plot_rt_forecast(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], leadtime=[l]))
+                plot_rt_forecast(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], leadtime=[l],
+                                                    weighting=args.weighting, combination=args.combination))
+        cfg.logger.info("Starting plotting SISSA")
+        for v in args.variables:  # loop sobre las variables a calibrar
+            for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
+                plot_sissa_forecast(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], leadtime=[l],
+                                                       weighting=args.weighting, combination=args.combination))
+
+    if cfg.get('gen_descriptor', False):
+        cfg.logger.info("Starting output files descriptor creation")
+        create_descriptors(
+            argparse.Namespace(desc_file_type='realtime_forecasts', variables=args.variables,
+                               ic_dates=[f"{args.year}-{args.month}-01"], leadtimes=range(1, 7+1),
+                               weighting=args.weighting, combination=args.combination))
                 
 
 # ==================================================================================================
 if __name__ == "__main__":
+
+    # Set pid file
+    pid_file = '/tmp/ereg-run-operational-fcst.pid'
+
+    # Get PID and save it to a file
+    with open(pid_file, 'w') as f:
+        f.write(f'{os.getpid()}')
+
+    # Get current datetime
     now = datetime.datetime.now()
   
     # Defines parser data
@@ -94,6 +133,9 @@ if __name__ == "__main__":
 
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
     
     # Run operational forecast
     start = time.time()
@@ -105,6 +147,7 @@ if __name__ == "__main__":
         raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
     else:
         error_detected = False
+        os.remove(pid_file)  # Remove pid file only if there were no errors
     finally:
         end = time.time()
         err_pfx = "with" if error_detected else "without"

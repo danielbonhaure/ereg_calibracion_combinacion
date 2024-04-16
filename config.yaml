@@ -1,9 +1,13 @@
 
-use_logger: true #!!bool "true"
+use_logger: !!bool "true"
+gen_det_data: !!bool "true"
+gen_descriptor: !!bool "true"
 
 # group to be set to created or downloaded files (only used when 
 # running in linux, on windows this param will be ignored)
-group_for_files: ereg
+# when running in a container, instead of use this parameter,
+# set the correct gid at the build stage of the container
+# group_for_files: ereg  # DO NOT USE THIS PARAMETER WHEN EREG RUN IN A CONTAINER
 
 # folders in which the data will be saved
 folders:
@@ -57,18 +61,18 @@ coords:
 # rt_members         -> Number of members in hindcast mode
 models:
   - [    model, institution, latitude, logitude, members, leadtimes, hindcast_begin, hindcast_end, file_end, rt_members ] 
-  - [    CanCM4i-IC3,  CMC,        Y,        X,      10,        12,           1982,         2021,       nc,         10 ] 
-#  - [    GEM-NEMO,     CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ] 
-#  - [    CanCM4i,      CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ] 
-  - [    CCSM4,        COLA,       Y,        X,      10,        12,           1982,         2013,       nc,         10 ] 
-  - [    CESM1,        COLA,       Y,        X,      10,        12,           1991,         2020,       nc,         10 ] 
-  - [    CFSv2,        NCEP,       Y,        X,      24,        10,           1982,         2010,       nc,         24 ] 
-  # [    CM2p1,        GFDL,       Y,        X,      10,        12,           1982,         2010,       nc,         10 ]  
-  # [ FLOR-A06,        GFDL,       Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
-  # [ FLOR-B01,        GFDL,       Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
-  - [    GEOS5,        NASA,       Y,        X,       4,         9,           1982,         2016,       nc,         10 ] 
-  - [    GEM5-NEMO,    CMC,        Y,        X,      10,         9,           1982,         2021,       nc,         10 ] 
-  - [    SPEAR,        GFDL,       Y,        X,      15,        12,           1991,         2020,       nc,         30 ] 
+  - [  CanCM4i-IC3,     CMC,        Y,        X,      10,        12,           1982,         2021,       nc,         10 ] 
+  # [ GEM-NEMO,         CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ] 
+  # [  CanCM4i,         CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ] 
+  - [    CCSM4,        COLA,        Y,        X,      10,        12,           1982,         2013,       nc,         10 ] 
+  - [    CESM1,        COLA,        Y,        X,      10,        12,           1991,         2020,       nc,         10 ] 
+  - [    CFSv2,        NCEP,        Y,        X,      24,        10,           1982,         2010,       nc,         24 ] 
+  # [    CM2p1,        GFDL,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ]  
+  # [ FLOR-A06,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
+  # [ FLOR-B01,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
+  - [    GEOS5,        NASA,        Y,        X,       4,         9,           1982,         2016,       nc,         10 ] 
+  - [GEM5-NEMO,         CMC,        Y,        X,      10,         9,           1982,         2021,       nc,         10 ] 
+  - [    SPEAR,        GFDL,        Y,        X,      15,        12,           1991,         2020,       nc,         30 ] 
 
 
 # URL where to download the models files from
@@ -81,20 +85,17 @@ iri_url: http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/
 # url_forecast_part  -> URL to access model FORECAST
 models_url:
   - [    model,       url_model_part,                  url_hindcast_part,                  url_forecast_part ] 
-  - [  CanCM4i-IC3,             .CanSIPS-IC3,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
-#  - [   GEM-NEMO,            .GEM-NEMO,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
-#  - [ CanCM4i,           .CanCM4i,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  - [  CanCM4i-IC3,     .CanSIPS-IC3,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  # [ GEM-NEMO,            .GEM-NEMO,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  # [  CanCM4i,             .CanCM4i,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
   - [    CCSM4,    .COLA-RSMAS-CCSM4,                           .MONTHLY,                           .MONTHLY ]
   - [    CESM1,    .COLA-RSMAS-CESM1,                           .MONTHLY,                           .MONTHLY ]
-
   - [    CFSv2,          .NCEP-CFSv2, .HINDCAST/.PENTAD_SAMPLES/.MONTHLY, .FORECAST/.PENTAD_SAMPLES/.MONTHLY ] 
   # [    CFSv2,          .NCEP-CFSv2, .HINDCAST/.EARLY_MONTH_SAMPLES/.MONTHLY, .FORECAST/.EARLY_MONTH_SAMPLES/.MONTHLY ]
   # [    CM2p1,    .GFDL-CM2p1-aer04,                           .MONTHLY,                           .MONTHLY ]  
   # [ FLOR-A06, .GFDL-CM2p5-FLOR-A06,                           .MONTHLY,                           .MONTHLY ]  
   # [ FLOR-B01, .GFDL-CM2p5-FLOR-B01,                           .MONTHLY,                           .MONTHLY ]  
   - [    GEOS5,        .NASA-GEOSS2S,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
-  - [  GEM5-NEMO,             .CanSIPS-IC3,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
-  - [  SPEAR,             .GFDL-SPEAR,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
-
- 
+  - [GEM5-NEMO,         .CanSIPS-IC3,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  - [    SPEAR,          .GFDL-SPEAR,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
 

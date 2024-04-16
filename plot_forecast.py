@@ -3,121 +3,15 @@ import argparse  # parse command line options
 import time  # test time consummed
 import calendar
 import numpy as np
-import xarray as xr
 import scipy.ndimage as ndimage
-from astropy.io import fits
-from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel
 from astropy.convolution import convolve
 import matplotlib as mpl
-mpl.use('agg')
-from matplotlib import pyplot as plt
-import cartopy.crs as ccrs
-import cartopy.feature
 from pathlib import Path
 import configuration
+from plot_common_functions import manipular_nc, asignar_categoria, plot_pronosticos
 
 cfg = configuration.Config.Instance()
-
-def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
-    """gets netdf variables"""
-    #reportar lectura de un archivo descargado
-    cfg.report_input_file_used(archivo)
-    #continuar ejecución
-    dataset = xr.open_dataset(archivo, decode_times=False)
-    var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name: slice(lonw, lone)})
-    lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})
-    lat = dataset[lat_name].sel(**{lat_name: slice(lats, latn)})
-    return var_out, lat, lon
-
-def asignar_categoria(for_terciles):
-    """determines most likely category"""
-    most_likely_cat = np.argmax(for_terciles, axis=2)
-    [nlats, nlons] = for_terciles.shape[0:2]
-    for_cat = np.zeros([nlats, nlons], dtype=int)
-    for_cat.fill(np.nan)
-    for ii in np.arange(nlats):
-        for jj in np.arange(nlons):
-            if (most_likely_cat[ii, jj] == 2):
-                if for_terciles[ii, jj, 2] >= 0.7:
-                    for_cat[ii, jj] = 12
-                elif for_terciles[ii, jj, 2] >= 0.6:
-                    for_cat[ii, jj] = 11
-                elif for_terciles[ii, jj, 2] >= 0.5:
-                    for_cat[ii, jj] = 10
-                elif for_terciles[ii, jj, 2] >= 0.4:
-                    for_cat[ii, jj] = 9
-            elif (most_likely_cat[ii, jj] == 0):
-                if for_terciles[ii, jj, 0] >= 0.7:
-                    for_cat[ii, jj] = 1
-                elif for_terciles[ii, jj, 0] >= 0.6:
-                    for_cat[ii, jj] = 2
-                elif for_terciles[ii, jj, 0] >= 0.5:
-                    for_cat[ii, jj] = 3
-                elif for_terciles[ii, jj, 0] >= 0.4:
-                    for_cat[ii, jj] = 4
-            elif (most_likely_cat[ii, jj] == 1):
-                if for_terciles[ii, jj, 1] >= 0.7:
-                    for_cat[ii, jj] = 8
-                elif for_terciles[ii, jj, 1] >= 0.6:
-                    for_cat[ii, jj] = 7
-                elif for_terciles[ii, jj, 1] >= 0.5:
-                    for_cat[ii, jj] = 6
-                elif for_terciles[ii, jj, 1] >= 0.4:
-                    for_cat[ii, jj] = 5
-
-            mascara = for_cat < 1
-            for_mask = np.ma.masked_array(for_cat, mascara)
-    return for_mask
-    
-def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
-                     titulo, salida):
-    """Plot probabilistic forecast"""
-    limits = [lonw, lone, lats, latn]
-    fig = plt.figure()
-    mapproj = ccrs.PlateCarree(central_longitude=(lonw + lone) / 2)
-    ax = plt.axes(projection=mapproj)
-    ax.set_extent(limits, crs=ccrs.PlateCarree())
-    ax.coastlines(alpha=0.5, resolution='50m')
-    ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=0.5)
-    CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, vmin=0.5, vmax=12.5,
-                    transform=ccrs.PlateCarree())
-    #genero colorbar para pronos
-    plt.title(titulo)
-    ax1 = fig.add_axes([0.2, 0.05, 0.2, 0.03])
-    cmap1 = mpl.colors.ListedColormap(colores[0:4, :])
-    bounds = [0.5, 1.5, 2.5, 3.5, 4.5]
-    norm = mpl.colors.BoundaryNorm(bounds, cmap1.N)
-    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap1, norm=norm, boundaries=bounds,
-                                    ticks=[1, 2, 3, 4], spacing='uniform',
-                                    orientation='horizontal')
-    cb1.set_ticklabels(['+70%', '65%', '55%', '45%'])
-    cb1.ax.tick_params(labelsize=7)
-    cb1.set_label('Lower')
-    ax2 = fig.add_axes([0.415, 0.05, 0.2, 0.03])
-    cmap2 = mpl.colors.ListedColormap(colores[4:8, :])
-    bounds = [4.5, 5.5, 6.5, 7.5, 8.5]
-    norm = mpl.colors.BoundaryNorm(bounds, cmap1.N)
-    cb2 = mpl.colorbar.ColorbarBase(ax2, cmap=cmap2, norm=norm, boundaries=bounds,
-                                    ticks=[5, 6, 7, 8], spacing='uniform',
-                                    orientation='horizontal')
-    cb2.set_ticklabels(['45%', '55%', '65%', '+70%'])
-    cb2.ax.tick_params(labelsize=7)
-    cb2.set_label('Normal')
-    ax3 = fig.add_axes([0.63, 0.05, 0.2, 0.03])
-    cmap3 = mpl.colors.ListedColormap(colores[8:, :])
-    bounds = [8.5, 9.5, 10.5, 11.5, 12.5]
-    norm = mpl.colors.BoundaryNorm(bounds, cmap1.N)
-    cb3 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap3, norm=norm, boundaries=bounds,
-                                    ticks=[9, 10, 11, 12], spacing='uniform',
-                                    orientation='horizontal')
-    cb3.set_ticklabels(['45%', '55%', '65%', '+70%'])
-    cb3.ax.tick_params(labelsize=7)
-    cb3.set_label('Upper')
-    plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
-    plt.close()
-    cfg.set_correct_group_to_file(salida)  # Change group of file
-    return
 
 def main(args):
     # Defino ref dataset y target season
@@ -127,8 +21,8 @@ def main(args):
     year_end = year_verif + 29
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     month= calendar.month_abbr[args.IC[0]]
-    wtech = ['pdf_int', 'mean_cor', 'same']
-    ctech = ['wpdf', 'wsereg']
+    wtech = args.weighting  # ['pdf_int', 'mean_cor', 'same']
+    ctech = args.combination  # ['wpdf', 'wsereg']
     #custom colorbar
     if args.variable[0] == 'prec':
         colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141., 60.],
@@ -138,6 +32,8 @@ def main(args):
                                                                   179.],
                             [116., 196., 118.], [49., 163., 84.], [0., 109.,
                                                                    44.]]) / 255
+        vmin = 0.5
+        vmax = 13.5
     else:
         colores = np.array([[8., 81., 156.], [49., 130., 189.],
                             [107., 174., 214.], [189., 215., 231.],
@@ -145,6 +41,9 @@ def main(args):
                             [150., 150., 150.], [82., 82., 82.],
                             [252., 174., 145.], [251., 106., 74.],
                             [222., 45., 38.], [165., 15., 21.]]) / 255
+        vmin = 0.5
+        vmax = 12.5
+
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
     PATH = cfg.get('folders').get('download_folder')
@@ -159,10 +58,11 @@ def main(args):
     RUTA_IM = Path(PATH, cfg.get('folders').get('figures').get('combined_forecasts'))
     for i in ctech:
         for j in wtech:
-            archivo = '/' + args.variable[0] + '_mme_' + month +'_' + \
+            archivo = args.variable[0] + '_mme_' + month + '_' + \
                     SSS + '_gp_01_' + j + '_' + i + '_hind.npz'
-            print(RUTA, archivo)
-            data = np.load(str(RUTA) + archivo)
+            info_message = f'File: "{Path(RUTA, archivo)}".'
+            print(info_message) if not cfg.get('use_logger') else cfg.logger.info(info_message)
+            data = np.load(Path(RUTA, archivo))
             lat = data['lat']
             lon = data['lon']
             lats = np.min(lat)
@@ -202,10 +102,14 @@ def main(args):
                 for_mask = np.ma.masked_array(for_mask,
                                               np.logical_not(land.astype(bool)))
                 plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
-                                 cmap, colores, SSS + ' Forecast IC ' +\
+                                 cmap, colores, vmin, vmax, SSS + ' Forecast IC ' +\
                                  month + '-' + str(k) + ' - ' + i + '-' + j, output)
 
     archivo = args.variable[0] + '_mme_' + month + '_' + SSS + '_gp_01_same_count_hind.npz'
+    if not Path(RUTA, archivo).is_file():
+        warn_message = f'No such file: "{archivo}". It will not be possible to build the uncalibrated forecast plot.'
+        print(warn_message) if not cfg.get('use_logger') else cfg.logger.warning(warn_message)
+        return
     data = np.load(Path(RUTA, archivo))
     lat = data['lat']
     lon = data['lon']
@@ -229,26 +133,35 @@ def main(args):
         for_mask = np.ma.masked_array(for_mask,
                                       np.logical_not(land.astype(bool)))
         plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
-                                 cmap, colores, SSS + ' Forecast IC ' +\
+                         cmap, colores, vmin, vmax, SSS + ' Forecast IC ' +\
                          month + '-' + str(k) +\
                          ' - Uncalibrated', output)
 
 
 # ==================================================================================================
 if __name__ == "__main__":
-    
+
     # Define parser data
     parser = argparse.ArgumentParser(description='Verify combined forecast')
     parser.add_argument('variable',type=str, nargs= 1,\
             help='Variable to verify (prec or tref)')
     parser.add_argument('IC', type=int, nargs=1,\
-            help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
+            help='Month of initial conditions (from 1 for Jan to 12 for Dec)')
     parser.add_argument('leadtime', type=int, nargs=1,\
-            help='Forecast leatime (in months, from 1 to 7)')
-    
+            help='Forecast leadtime (in months, from 1 to 7)')
+    parser.add_argument('--weighting', nargs='+',
+            default=["same", "pdf_int", "mean_cor"], choices=["same", "pdf_int", "mean_cor"],
+            help='Weighting methods to be plotted.')
+    parser.add_argument('--combination', nargs='+',
+            default=["wpdf", "wsereg"], choices=["wpdf", "wsereg"],
+            help='Combination methods to be plotted.')
+
     # Extract data from args
     args = parser.parse_args()
-  
+
+    # Set error as not detected
+    error_detected = False
+
     # Run plotting
     start = time.time()
     try:

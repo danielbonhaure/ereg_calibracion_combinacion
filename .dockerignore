@@ -1,0 +1,14 @@
+# Ignore everything in this directory
+*
+# Except this file
+!.git
+!*.yaml
+!*.py
+setup.py
+setup_crontab.py
+!*.sh
+create_conda_env.sh
+!*.md
+!combined_models
+!updates
+!email.yaml.tmpl

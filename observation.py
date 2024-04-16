@@ -35,7 +35,6 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     cfg.report_input_file_used(archivo)
     #hay problemas para decodificar las fechas, genero un xarray con mis fechas decodificadas
     dataset = xr.open_dataset(archivo, decode_times=False)
-    print(dataset)
     var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name:
                                        slice(lonw, lone)})
     lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})
@@ -45,7 +44,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     time = [pivot + DateOffset(months=int(x), days=15) for x in dataset['T']]
     #genero xarray con estos datos para obtener media estacional
 
-    ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out)},
+    ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out.data)},
                     coords={'time': time, lat_name: lat, lon_name: lon})
     #como el resampling trimestral toma el ultimo mes como parametro
     var_out = ds[variable].resample(time='Q-' + last_month).mean(dim='time')
@@ -166,8 +165,8 @@ class Observ(object):
                                            (ntimes-1, 1, 1)), 0, 3)
                 aux = np.ma.array(aux, mask=mask)
                 A = np.ma.sort(aux, axis=-1)
-                lower = A[:, :, np.int(np.round((ntimes - 1) / 3) - 1)]
-                upper = A[:, :, np.int(np.round((ntimes - 1) / 3 * 2) - 1)]
+                lower = A[:, :, np.int32(np.round((ntimes - 1) / 3) - 1)]
+                upper = A[:, :, np.int32(np.round((ntimes - 1) / 3 * 2) - 1)]
                 lower = lower.filled(np.nan)
                 upper = upper.filled(np.nan)
                 return lower, upper
@@ -187,12 +186,58 @@ class Observ(object):
                                        (ntimes, 1, 1)), 0, 3)
             aux = np.ma.array(aux, mask=mask)
             A = np.ma.sort(aux, axis=-1)
-            lower = A[:, :, np.int(np.round(ntimes / 3) - 1)]
+            lower = A[:, :, np.int32(np.round(ntimes / 3) - 1)]
             lower = lower.filled(np.nan)
-            upper = A[:, :, np.int(np.round(ntimes / 3 * 2) - 1)]
+            upper = A[:, :, np.int32(np.round(ntimes / 3 * 2) - 1)]
             upper = upper.filled(np.nan)
             terciles = np.rollaxis(np.stack([lower, upper], axis=2), 2, 0)
         return terciles
+
+    def computo_quintiles(self, observation, CV_opt):
+        """obtains quintiles limits"""
+        print("observed quintiles limits")
+        ntimes = observation.shape[0]
+        if CV_opt: #validacion cruzada ventana 1 anio
+            i = np.arange(ntimes)
+            p = Pool(CORES)
+            p.clear()
+            CV_matrix = np.logical_not(np.identity(ntimes))
+            def cal_quintiles(i, CV_m=CV_matrix, obs=observation):
+                aux = np.rollaxis(obs[CV_m[:, i], :, :], 0, 3)
+                mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux), axis=2),
+                                                         np.sum(np.isnan(aux), axis=2)
+                                                         / (ntimes-1) > 0.15),
+                                           (ntimes-1, 1, 1)), 0, 3)
+                aux = np.ma.array(aux, mask=mask)
+                A = np.ma.sort(aux, axis=-1)
+                lower = A[:, :, np.int32(np.round((ntimes - 1) / 5) - 1)]
+                upper = A[:, :, np.int32(np.round((ntimes - 1) / 5 * 4) - 1)]
+                lower = lower.filled(np.nan)
+                upper = upper.filled(np.nan)
+                return lower, upper
+
+            res = p.map(cal_quintiles, i.tolist())
+            quintiles = np.stack(res, axis=1)
+            del(cal_quintiles, res)
+            p.close()
+
+        else:
+            aux = np.rollaxis(observation, 0, 3)
+            mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux),
+                                                            axis=2),
+                                                     np.sum(np.isnan(aux),
+                                                            axis=2)
+                                                     / (ntimes-1) > 0.15),
+                                       (ntimes, 1, 1)), 0, 3)
+            aux = np.ma.array(aux, mask=mask)
+            A = np.ma.sort(aux, axis=-1)
+            lower = A[:, :, np.int32(np.round(ntimes / 5) - 1)]
+            lower = lower.filled(np.nan)
+            upper = A[:, :, np.int32(np.round(ntimes / 5 * 4) - 1)]
+            upper = upper.filled(np.nan)
+            quintiles = np.rollaxis(np.stack([lower, upper], axis=2), 2, 0)
+        return quintiles
+
 
     def computo_categoria(self, observation, tercil):
         """assings observed category: Below, normal, Above"""
