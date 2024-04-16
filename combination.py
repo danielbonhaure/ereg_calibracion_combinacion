@@ -13,6 +13,7 @@ import numpy as np
 import ereg  # apply ensemble regression to multi-model ensemble
 import configuration
 import pandas as pd
+import os
 
 cfg = configuration.Config.Instance()
 
@@ -152,7 +153,6 @@ def main(args):
         weight = np.ones([2, ntimes, nlats, nlons, nmodels]) / nmodels
 
     if args.ctech == 'wpdf':
-        print(weight.shape, prob_terciles.shape)
         prob_terc_comb = np.nansum(weight * prob_terciles, axis=4)
 
     elif args.ctech == 'wsereg':
@@ -162,6 +162,12 @@ def main(args):
         [forecast_cr, Rmedio, Rmej, epsb, Kmax, K] = ereg.ensemble_regression(pronos_dt,
                                                                               obs_dt,
                                                                               True)
+        #se calcula la media del ensamble (estas van a ser las predicciones determinísticas)
+        message = f"Se van a calcular los datos determinísticos para datos en el archivo: {archivo}."
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+        ensemble_mean = np.nanmean(forecast_cr, axis=1)
+        message = f"Se calcularon los datos determinísticos para datos en el archivo: {archivo}."
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         #obtains prob for each terciles,year and member
         prob_terc = ereg.probabilidad_terciles(forecast_cr, epsb, terciles)
         #obtengo la combinacion a partir de la suma pesada
@@ -178,16 +184,26 @@ def main(args):
     route = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'))
     if args.ctech == 'wsereg':
         archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]]\
-                + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech + \
+                + '_' + SSS + '_gp_01_' + args.wtech[0] + '_' + args.ctech + \
                 '_hind.npz'
     else:
         archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]]\
-                + '_' + SSS + '_gp_01_' + args.wtech[0] + '_'+ args.ctech + \
+                + '_' + SSS + '_gp_01_' + args.wtech[0] + '_' + args.ctech + \
                 '_hind.npz'
 
     np.savez(Path(route, archivo), prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
     cfg.set_correct_group_to_file(Path(route, archivo))  # Change group of file
-    
+
+    #guardo las predicciones determinísticas
+    if args.ctech == 'wsereg' and cfg.get('gen_det_data', False):
+        archivo_det = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'),
+                           'determin_' + os.path.basename(archivo))
+        message = f"Se van a guardar los datos determinísticos en el archivo: {archivo_det}."
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+        np.savez(archivo_det, ensemble_mean=ensemble_mean, lat=lat, lon=lon)
+        cfg.set_correct_group_to_file(archivo_det)  # Change group of file
+        message = f"Se guardaron los datos determinísticos en el archivo: {archivo_det}."
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 
 
 # ==================================================================================================
@@ -198,9 +214,9 @@ if __name__ == "__main__":
     parser.add_argument('variable', type=str, nargs=1, 
         help='Variable to calibrate (prec or tref)')
     parser.add_argument('IC', type=int, nargs=1, 
-        help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
+        help='Month of initial conditions (from 1 for Jan to 12 for Dec)')
     parser.add_argument('leadtime', type=int, nargs=1, 
-        help='Forecast leatime (in months, from 1 to 7)')
+        help='Forecast leadtime (in months, from 1 to 7)')
     parser.add_argument('--no-models', nargs='+', dest='no_models', default=[],
         choices=[item[0] for item in cfg.get('models')[1:]], 
         help='Models to be discarded')
@@ -226,6 +242,9 @@ if __name__ == "__main__":
     
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
   
     # Run combination
     start = time.time()

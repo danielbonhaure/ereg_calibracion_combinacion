@@ -178,3 +178,53 @@ def probabilidad_terciles(forecast, epsilon, tercil):
                                     3, 0)
 
     return prob_terciles
+
+def probabilidad_quintiles(forecast, epsilon, quintil):
+    """computes cpdf until quintile limits"""
+    print("Computing cpdf for quintile limits")
+    if np.ndim(forecast) == 4:
+        [ntimes, nmembers, nlats, nlons] = forecast.shape
+        i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
+        l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats * nlons),
+                    ntimes)
+        j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons),
+                    ntimes * nmembers)
+        k = np.tile(np.arange(nlons, dtype=int), ntimes * nmembers * nlats)
+        p = Pool (CORES)
+        p.clear()
+        def evaluo_pdf_normal(i, l, j, k, quint=quintil, media=forecast, sigma=epsilon):
+            if np.logical_or(np.isnan(media[i, l, j, k]), np.isnan(sigma[j, k])):
+                pdf_cdf = np.array([np.nan, np.nan])
+            else:
+                pdf_cdf = norm.cdf(quint[:, i, j, k], loc=media[i, l, j, k],
+                                   scale=np.sqrt(sigma[j, k]))
+            return pdf_cdf
+
+        res = p.map(evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(),
+                    k.tolist())
+        p.close()
+        prob_quintiles = np.rollaxis(np.reshape(np.squeeze(np.stack(res)),
+                                               [ntimes, nmembers, nlats, nlons,
+                                                2]), 4, 0)
+    else:
+        [nmembers, nlats, nlons] = forecast.shape
+        l = np.repeat(np.arange(nmembers, dtype=int), nlats * nlons)
+        j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), nmembers)
+        k = np.tile(np.arange(nlons, dtype=int), nmembers * nlats)
+        p = Pool (CORES)
+        p.clear()
+        def evaluo_pdf_normal(l, j, k, quint=quintil, media=forecast, sigma=epsilon):
+            if np.logical_or(np.isnan(media[l, j, k]), np.isnan(sigma[j, k])):
+                pdf_cdf = np.array([np.nan, np.nan])
+            else:
+                pdf_cdf = norm.cdf(quint[:, j, k], loc=media[l, j, k],
+                               scale=np.sqrt(sigma[j, k]))
+            return pdf_cdf
+
+        res = p.map(evaluo_pdf_normal, l.tolist(), j.tolist(), k.tolist())
+        p.close()
+        prob_quintiles = np.rollaxis(np.reshape(np.squeeze(np.stack(res)),
+                                               [nmembers, nlats, nlons, 2]),
+                                    3, 0)
+
+    return prob_quintiles

@@ -40,8 +40,8 @@ def main(args):
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1991 if seas[-1] <= 12 else 1992
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-    message = "Calibrating " + args.variable[0] + " forecasts for " + SSS +\
-              " initialized in " + str(args.IC[0]) 
+    message = "Calibrating " + args.variable[0] + " forecasts for " + SSS + \
+              " initialized in " + str(args.IC[0])
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 
     message = "Processing Observations"
@@ -74,8 +74,8 @@ def main(args):
             obs_dt = obs.remove_trend(obs_3m, args.CV) #Standardize and detrend observation
             terciles = obs.computo_terciles(obs_dt, args.CV) # Obtain tercile limits
             categoria_obs = obs.computo_categoria(obs_dt, terciles)  #Define observed category
-            np.savez(archivo, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
-                     terciles=terciles, cat_obs=categoria_obs)
+            np.savez(archivo, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,
+                     terciles=terciles, cat_obs=categoria_obs, obs_3m=obs_3m)
             cfg.set_correct_group_to_file(archivo)  # Change group of file
     if np.logical_not(args.CV):
         archivo2 = Path(PATH, cfg.get('folders').get('data').get('observations'),
@@ -114,7 +114,7 @@ def main(args):
                           calendar.month_abbr[args.IC[0]] + '_' + SSS + \
                           '_gp_01_hind.npz')
         if args.CV:
-            if output.is_file():
+            if output.is_file() and not args.OW:
                 pass
             else:
                 if np.logical_and(it['nombre'] == 'CFSv2', args.IC[0] == 11):
@@ -156,7 +156,7 @@ def main(args):
                 pass
             else:
 
-#                if output.is_file():
+#                if output.is_file() and not args.OW:
 #                    data = np.load(output)
 #                    pdf_intensity = data['peso']
 #                    data.close()
@@ -167,7 +167,7 @@ def main(args):
                                      it['plazos'], it['fechai'], it['fechaf'],\
                                      it['ext'], it['rt_miembros'] + 4)
                 else:
-                     modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
+                    modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
                                      it['latn'], it['lonn'], it['miembros'], \
                                      it['plazos'], it['fechai'], it['fechaf'],\
                                      it['ext'], it['rt_miembros'])
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     parser.add_argument('leadtime', type=int, nargs=1, 
         help='Forecast leadtime (in months, from 1 to 7)')
     parser.add_argument('--CV', action='store_true', 
-        help='Croos-validated mode')
+        help='Cross-validated mode')
     parser.add_argument('--OW', action='store_true', 
         help='Overwrite previous calibrations')
     group = parser.add_mutually_exclusive_group()
@@ -222,6 +222,9 @@ if __name__ == "__main__":
     
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
     
     # Run calibration
     start = time.time()
@@ -238,5 +241,4 @@ if __name__ == "__main__":
         err_pfx = "with" if error_detected else "without"
         message = f"Total time to run \"calibration.py\" ({err_pfx} errors): {end - start}" 
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
-
 

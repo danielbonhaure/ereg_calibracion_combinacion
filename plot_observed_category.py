@@ -10,19 +10,9 @@ import cartopy.crs as ccrs
 import cartopy.feature
 from pathlib import Path
 import configuration
+from plot_common_functions import manipular_nc
 
 cfg = configuration.Config.Instance()
-
-def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
-    """gets netdf variables"""
-    #reportar lectura de un archivo descargado
-    cfg.report_input_file_used(archivo)
-    #continuar ejecución
-    dataset = xr.open_dataset(archivo, decode_times=False)
-    var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name: slice(lonw, lone)})
-    lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})
-    lat = dataset[lat_name].sel(**{lat_name: slice(lats, latn)})
-    return var_out, lat, lon
 
 def main(args):
     """Plot observed category"""
@@ -90,7 +80,7 @@ def main(args):
                                        orientation='horizontal', alpha=0.6)
         cb.set_ticklabels(['Lower', 'Middle', 'Upper'])
         cb.ax.tick_params(labelsize=7)
-        plt.savefig(output, dpi=600, bbox_inches='tight', papertype='A4')
+        plt.savefig(output, dpi=600, bbox_inches='tight')  #, papertype='A4')  # papertype ya no es un param válido
         plt.close()
         cfg.set_correct_group_to_file(output)  # Change group of file
 
@@ -107,6 +97,9 @@ if __name__ == "__main__":
     
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
   
     # Run plotting
     start = time.time()

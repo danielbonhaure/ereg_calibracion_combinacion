@@ -1,7 +1,9 @@
+
 import os
 import sys
 
 from getpass import getuser
+
 
 user_name = getuser()
 user_home = os.path.expanduser(f'~{user_name}')

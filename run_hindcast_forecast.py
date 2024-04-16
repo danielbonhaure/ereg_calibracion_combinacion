@@ -4,6 +4,7 @@
 # El resultado de la calibración sin cross-validation se usa para la combinación en tiempo real "real_time_combination.py"
 # El resultado de la calibración con cross-validation se usa para la combinación general "combination.py"
 
+import os
 import argparse  # parse command line options
 import time  # test time consummed
 import configuration
@@ -13,12 +14,13 @@ from calibration import main as calibration
 from combination import main as combination
 from plot_forecast import main as plot_forecast
 from plot_observed_category import main as plot_observed_category
+from create_output_files_descriptor import main as create_descriptors
 
 cfg = configuration.Config.Instance()
 
-def main(args): 
+def main(args):
+
     if args.calibrate:
-        print(args.cross_validate)
         cfg.logger.info("Starting calibration")
         for v in args.variables:  # loop sobre las variables a calibrar
             for m in range(1, 12+1):  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)
@@ -41,12 +43,27 @@ def main(args):
         for v in args.variables:  # loop sobre las variables a calibrar
             for m in range(1, 12+1):  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)
                 for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
-                    plot_forecast(argparse.Namespace(variable=[v], IC=[m], leadtime=[l]))
+                    plot_forecast(argparse.Namespace(variable=[v], IC=[m], leadtime=[l],
+                                                     weighting=args.weighting, combination=args.combination))
                 plot_observed_category(argparse.Namespace(variable=[v], IC=[m]))
+
+    if cfg.get('gen_descriptor', False):
+        cfg.logger.info("Starting output files descriptor creation")
+        create_descriptors(
+            argparse.Namespace(desc_file_type='hindcast_forecasts', variables=args.variables,
+                               ic_months=range(1, 12+1), leadtimes=range(1, 7+1),
+                               weighting=args.weighting, combination=args.combination))
                 
 
 # ==================================================================================================
 if __name__ == "__main__":
+
+    # Set pid file
+    pid_file = '/tmp/ereg-run-hindcast-fcst.pid'
+
+    # Get PID and save it to a file
+    with open(pid_file, 'w') as f:
+        f.write(f'{os.getpid()}')
   
     # Defines parser data
     parser = argparse.ArgumentParser(description='Run hindcast forecast')
@@ -79,6 +96,9 @@ if __name__ == "__main__":
 
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
     
     # Run hindcast forecast
     start = time.time()
@@ -90,6 +110,7 @@ if __name__ == "__main__":
         raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
     else:
         error_detected = False
+        os.remove(pid_file)  # Remove pid file only if there were no errors
     finally:
         end = time.time()
         err_pfx = "with" if error_detected else "without"

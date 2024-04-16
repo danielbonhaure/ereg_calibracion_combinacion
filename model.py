@@ -18,9 +18,9 @@ PATH = cfg.get("folders").get("download_folder")
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
-    #reportar lectura de un archivo descargado
-    #cfg.report_input_file_used(archivo)
-    #continuar ejecución
+    # reportar lectura de un archivo descargado
+    cfg.report_input_file_used(archivo)
+    # continuar ejecución
     dataset = xr.open_mfdataset(str(archivo), engine='scipy', combine='by_coords',
                                 decode_times=False)
     pivot = datetime.datetime(1960, 1, 1)
@@ -62,7 +62,7 @@ class Model(object):
         """select forecasted season based on IC and target"""
         #init_cond en meses y target en meses ()
         final_month = init_cond + 11
-        if final_month > 12: 
+        if final_month > 12:
             final_month = final_month - 12
         ruta = Path(PATH, cfg.get('folders').get('nmme').get('hindcast'))
         file = self.var_name + '_Amon_' + self.institution + '-' +\
@@ -206,8 +206,8 @@ class Model(object):
                 A = np.sort(np.rollaxis(np.reshape(forecast[CV_m[:, i], :, :, :],
                                                    [(ntimes - 1) * nmembers, nlats, nlons]),\
                                         0, 3), axis=-1, kind='quicksort')
-                lower = A[:, :, np.int(np.round((ntimes - 1) * nmembers / 3) - 1)]
-                upper = A[:, :, np.int(np.round((ntimes - 1) * nmembers / 3 * 2) - 1)]
+                lower = A[:, :, np.int32(np.round((ntimes - 1) * nmembers / 3) - 1)]
+                upper = A[:, :, np.int32(np.round((ntimes - 1) * nmembers / 3 * 2) - 1)]
                 return lower, upper
 
             res = p.map(cal_terciles, i.tolist())
@@ -219,8 +219,8 @@ class Model(object):
             A = np.sort(np.rollaxis(np.reshape(forecast, [ntimes * nmembers,
                                                           nlats, nlons]), 0, 3),
                         axis=-1, kind='quicksort')
-            upper = A[:, :, np.int(np.round(ntimes * nmembers / 3) - 1)]
-            lower = A[:, :, np.int(np.round(ntimes * nmembers /3 * 2) - 1)]
+            upper = A[:, :, np.int32(np.round(ntimes * nmembers / 3) - 1)]
+            lower = A[:, :, np.int32(np.round(ntimes * nmembers /3 * 2) - 1)]
             terciles = np.rollaxis(np.stack([upper, lower], axis=2), 2, 0)
         return terciles
 

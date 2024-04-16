@@ -7,6 +7,7 @@ import configuration
 import pandas as pd
 import urllib.request
 import urllib.parse
+import urllib.error
 import xarray as xr
 import os
 import os.path
@@ -18,6 +19,7 @@ import sys
 import cdo
 import netCDF4
 import numpy as np
+import shutil
 
 cfg = configuration.Config.Instance()
 
@@ -62,7 +64,9 @@ def check_file(filename, variable, recheck=False):
       else:
         # Check if file contains valid values
         v = d.get(variable)
-        if not v or np.isnan(float(v.max())):
+        if v is None:
+          return False
+        elif np.isnan(float(v.max(skipna=True))):
           return False
         d.close()
   return True
@@ -72,15 +76,19 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
   # 
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
-     for member in range(1, model_data.members+1, 1):
-      for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
-       for month in range(1, 12 + 1, 1):
+      for member in range(1, model_data.members+1, 1):
+        if recheck:
+          cfg.logger.info(f'Checking files: for: model={model_data.model}, variable={variable}, member={member}')
+        for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
+          for month in range(1, 12+1, 1):
             FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                                   cfg.get('folders').get('nmme').get('hindcast'))
+
             if model_data.model == "GEM5-NEMO":
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "hindcast")
+              DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "hindcast")
             else:
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
+              DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
+
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
             DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
             yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
@@ -98,11 +106,9 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
                                 cfg.get('folders').get('nmme').get('real_time'))
 
           if model_data.model == "GEM5-NEMO":
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data,
-                                                     "operational")
+            DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "operational")
           else:
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data,
-                                                     "operational")
+            DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
 
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
           DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
@@ -119,11 +125,9 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
                               cfg.get('folders').get('nmme').get('real_time'))
 
         if model_data.model == "GEM5-NEMO":
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data,
-                                                     "real_time")
+          DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "real_time")
         else:
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data,
-                                                     "real_time")
+          DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
 
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
         DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
@@ -155,6 +159,24 @@ def links_to_download_observation(recheck, redownload):
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'land'}
 
 
+def links_to_download_observation_for_verification(recheck, redownload):
+  #
+  FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
+                        cfg.get('folders').get('nmme').get('root'))
+  #
+  FILENAME = "precip.mon.mean.nc"
+  DOWNLOAD_URL = "https://downloads.psl.noaa.gov/Datasets/cmap/std/precip.mon.mean.nc"
+  DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'precip', recheck) if not redownload else False
+  yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'precip'}
+  #
+  FILENAME = "air.mon.mean.nc"
+  DOWNLOAD_URL = "https://downloads.psl.noaa.gov/Datasets/ghcncams/air.mon.mean.nc"
+  DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'air', recheck) if not redownload else False
+  yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'air'}
+
+
 def modify_downloaded_file_if_needed(downloaded_file):
   #
   tempfile = str(downloaded_file).replace('.nc', '_TMP.nc')
@@ -184,23 +206,51 @@ def modify_downloaded_file_if_needed(downloaded_file):
 def download_file(download_url, filename, variable):
   #
   download_url = urllib.parse.quote(download_url, safe=':/')
+  # Create progress bar to track downloading
+  pb = helpers.DownloadProgressBar(os.path.basename(filename))
+  # Add headers to request
+  opener = urllib.request.build_opener()
+  opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64)')]
+  urllib.request.install_opener(opener)
   # Download file
-  f, h = urllib.request.urlretrieve(download_url, filename)
+  try:
+    tmp_file, h = urllib.request.urlretrieve(url=download_url, reporthook=pb)
+  except urllib.error.HTTPError as e:
+    cfg.logger.error(f'HTTPError {e.code} "{e.reason}" downloading: {download_url}')
+    raise
+  except Exception as e:
+    cfg.logger.error(f'Error {type(e).__name__} downloading: {download_url}')
+    raise
+  else:
+    shutil.move(tmp_file, filename)
+  finally:
+    urllib.request.urlcleanup()  # Clean up temporary files
   # Change group of file
   cfg.set_correct_group_to_file(filename)
   # Check file size
-  assert os.stat(filename).st_size != 0
+  assert os.stat(filename).st_size != 0, \
+    f'Size equal 0 for file {filename}'
   # Modify files when needed
   modify_downloaded_file_if_needed(filename)
   # Check if file can be opened and contains valid values
   if str(filename).endswith('.nc'):
     d = xr.open_dataset(filename, decode_times=False)
-    assert not np.isnan(float(d.get(variable).max()))
+    assert not np.isnan(float(d.get(variable).max(skipna=True))), \
+      f'All NaN values for {variable} in file {filename}'
     d.close()
 
 
 # ==================================================================================================
 if __name__ == "__main__":
+
+  # Set pid file
+  pid_file = '/tmp/ereg-download.pid'
+
+  # Get PID and save it to a file
+  with open(pid_file, 'w') as f:
+    f.write(f'{os.getpid()}')
+
+  # Get start time
   now = datetime.datetime.now()
   
   # PROCESAR ARGUMENTOS
@@ -251,25 +301,27 @@ if __name__ == "__main__":
   if any(item in ['hindcast', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_hindcast(df_modelos, args.recheck, args.redownload)
-    df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}hindcast links: {round(end - start, 2)}')
   if any(item in ['operational', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_operational(df_modelos, args.year, args.recheck, args.redownload)
-    df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
+    obs_links = links_to_download_observation_for_verification(args.recheck, args.redownload)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(obs_links)], ignore_index=True)
     end = time.time()
-    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}operational links: {round(end - start, 2)} -> anho: {args.year}')
+    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}operational links: {round(end - start, 2)} -> year: {args.year}')
   if any(item in ['real_time', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_real_time(df_modelos, args.year, args.month, args.recheck, args.redownload)
-    df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
-    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}real_time links: {round(end - start, 2)} -> anho: {args.year}, mes: {args.month}')
+    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}real_time links: {round(end - start, 2)} -> year: {args.year}, month: {args.month}')
   if any(item in ['observation', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_observation(args.recheck, args.redownload)
-    df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}observation links: {round(end - start, 2)}')
   
@@ -285,20 +337,21 @@ if __name__ == "__main__":
   count_downloaded_files, count_failed_downloads = 0, 0
   if n_files_to_download:
     run_status = f'Downloading ereg input files (PID: {os.getpid()})'
-    helpers.progress_bar(count_downloaded_files, n_files_to_download, status=run_status)
+    progress_bar = helpers.ProgressBar(n_files_to_download, run_status)
     for row in df_links.query('DOWNLOADED == False').itertuples():
+      progress_bar.report_advance(0)
       try:
         download_file(row.DOWNLOAD_URL, row.FILENAME, row.VARIABLE)
       except Exception as e:
-        helpers.progress_bar_clear_line()
+        progress_bar.clear_line()
         cfg.logger.error(e)
         cfg.logger.warning(f'Failed to download file "{row.FILENAME}" from url "{row.DOWNLOAD_URL}"')
         count_failed_downloads += 1
       else:
         df_links.at[row.Index, 'DOWNLOADED'] = True
         count_downloaded_files += 1
-      helpers.progress_bar(count_downloaded_files+count_failed_downloads, n_files_to_download, status=run_status)
-    helpers.progress_bar_close()
+      progress_bar.report_advance(1)
+    progress_bar.close()
     cfg.logger.info(f"{count_downloaded_files} files were downloaded successfully and "+
                     f"{count_failed_downloads} downloads failed!")
   else:
@@ -313,3 +366,6 @@ if __name__ == "__main__":
       subject = 'Archivos no descargados - EREG SMN', 
       body = df_links.query('DOWNLOADED == False').to_html()             
     )
+
+  # Finally, remove pid file
+  os.remove(pid_file)
