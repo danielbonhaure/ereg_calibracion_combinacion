@@ -92,7 +92,7 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
   now = datetime.datetime.now()
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
-      for member in range(1, model_data.members+1, 1): 
+      for member in range(1, model_data.rt_members+1, 1): 
         for month in range(1, now.month+1 if year == now.year else 12+1, 1):
           FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                                 cfg.get('folders').get('nmme').get('real_time'))
