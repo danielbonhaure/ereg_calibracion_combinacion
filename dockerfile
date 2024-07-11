@@ -54,8 +54,8 @@ FROM python:${PYTHON_VERSION}-slim AS py_builder
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Set python environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Install OS packages
 RUN apt-get -y -qq update && \
@@ -64,6 +64,8 @@ RUN apt-get -y -qq update && \
         build-essential \
         # some project dependencies \
         cdo nco \
+        # to install numpy dependencies (ninja and patchelf)
+        cmake automake \
         # to install cartopy
         proj-bin libproj-dev libgeos-dev && \
     rm -rf /var/lib/apt/lists/*
