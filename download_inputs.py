@@ -141,13 +141,13 @@ def links_to_download_observation(recheck, redownload):
                         cfg.get('folders').get('nmme').get('root'))
   #
   FILENAME = "prec_monthly_nmme_cpc.nc"
-  DOWNLOAD_URL = f"{cfg.get('iri_url')}.CPC-CMAP-URD/.prate/data.nc"
+  DOWNLOAD_URL = f"{cfg.get('iri_url')}.CPC-CMAP-URD/.1x1_7922/.prate/data.nc"
   DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'prec', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'prec'}
   #
   FILENAME = "tref_monthly_nmme_ghcn_cams.nc"
-  DOWNLOAD_URL = f"{cfg.get('iri_url')}.GHCN_CAMS/.updated/data.nc"
+  DOWNLOAD_URL = f"{cfg.get('iri_url')}.GHCN_CAMS/.1x1_4822/.t2m/data.nc"
   DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'tref', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'tref'}
