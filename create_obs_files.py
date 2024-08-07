@@ -18,7 +18,7 @@ def main(args):
 
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1982 if seas[-1] <= 12 else 1983
+    year_verif = 1991 if seas[-1] <= 12 else 1992
     sss_str = "".join(calendar.month_abbr[i][0] for i in sss)
 
     mensaje = "Processing " + args.variable[0] + " observations for " + sss_str + " initialized in " + str(args.IC[0])
@@ -30,9 +30,9 @@ def main(args):
                         'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + sss_str + '.npz')
         if not archivo1.is_file() or args.OW:
             if args.variable[0] == 'prec':
-                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1982, 2011)
+                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991, 2020)
             else:
-                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1982, 2011)
+                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991, 2020)
 
             [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[sss[-1]],
                                                              year_verif,
@@ -53,9 +53,9 @@ def main(args):
                         'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + sss_str + '_parameters.npz')
         if not archivo2.is_file() or args.OW:
             if args.variable[0] == 'prec':
-                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1982, 2011)
+                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991, 2020)
             else:
-                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1982, 2011)
+                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991, 2020)
 
             [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[sss[-1]],
                                                              year_verif,
@@ -75,9 +75,9 @@ def main(args):
                     '_' + sss_str + '_parameters.npz')
     if not archivo3.is_file() or args.OW:
         if args.variable[0] == 'prec':
-            obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1982, 2011)
+            obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991, 2020)
         else:
-            obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1982, 2011)
+            obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991, 2020)
         [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[sss[-1]],
                                                          year_verif,
                                                          coords['lat_s'],

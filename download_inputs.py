@@ -186,8 +186,8 @@ def modify_downloaded_file_if_needed(downloaded_file):
     cfg.logger.info(f'Modifying file {filename}. Renaming variable "prate" to "prec".')
     with netCDF4.Dataset(downloaded_file, "r+", format="NETCDF4") as nc:
       nc.renameVariable('prate', 'prec')
-    cfg.logger.info(f'Modifying file {filename}. Selecting years (from 1982 to 2011).')
-    cdo.Cdo().selyear('1982/2011', input=downloaded_file, output=tempfile)
+    cfg.logger.info(f'Modifying file {filename}. Selecting years (from 1991 to 2020).')
+    cdo.Cdo().selyear('1991/2020', input=downloaded_file, output=tempfile)
     os.replace(tempfile, downloaded_file)
   #
   filename = 'tref_monthly_nmme_ghcn_cams.nc'
