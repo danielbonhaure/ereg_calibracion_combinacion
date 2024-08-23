@@ -84,7 +84,7 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
             FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                                   cfg.get('folders').get('nmme').get('hindcast'))
 
-            if model_data.model == "GEM5-NEMO":
+            if model_data.model == "GEM5.2-NEMO":
               DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "hindcast")
             else:
               DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
@@ -105,7 +105,7 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
           FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                                 cfg.get('folders').get('nmme').get('real_time'))
 
-          if model_data.model == "GEM5-NEMO":
+          if model_data.model == "GEM5.2-NEMO":
             DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "operational")
           else:
             DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
@@ -124,7 +124,7 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
         FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                               cfg.get('folders').get('nmme').get('real_time'))
 
-        if model_data.model == "GEM5-NEMO":
+        if model_data.model == "GEM5.2-NEMO":
           DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "real_time")
         else:
           DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
