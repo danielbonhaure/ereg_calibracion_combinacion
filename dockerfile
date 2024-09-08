@@ -241,12 +241,21 @@ ARG R_PYTHON_CMD="/usr/local/bin/python run_operational_forecast.py --overwrite 
 
 # Crear archivo de configuración de CRON
 RUN printf "\n\
-# Download input data \n\
+\043 Download input data \n\
 ${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${D_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
-# Run operational forecasts \n\
+\043 Run operational forecasts \n\
 ${R_CRON_TIME_STR}  cd ${EREG_HOME} && ${R_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
 \n" > ${EREG_HOME}/crontab.txt
 RUN chmod a+rw ${EREG_HOME}/crontab.txt
+
+# Crear archivo con variables de entorno
+RUN touch ${EREG_HOME}/crontab-envvars.txt \
+ && chmod a+rw ${EREG_HOME}/crontab-envvars.txt
+
+# CRON toma variables de entorno desde /etc/environment,
+# para más info ver: https://askubuntu.com/a/700126
+RUN mv /etc/environment /etc/environment-old \
+ && ln -s ${EREG_HOME}/crontab-envvars.txt /etc/environment
 
 # Setup CRON for root user
 RUN (cat ${EREG_HOME}/crontab.txt) | crontab -
@@ -255,11 +264,11 @@ RUN (cat ${EREG_HOME}/crontab.txt) | crontab -
 RUN printf "#!/bin/bash \n\
 set -e \n\
 \n\
-# Reemplazar tiempo ejecución de la descarga de los datos de entrada \n\
+\043 Reemplazar tiempo ejecución de la descarga de los datos de entrada \n\
 crontab -l | sed \"/download_inputs.py/ s|^\S* \S* \S* \S* \S*|\$D_CRON_TIME_STR|g\" | crontab - \n\
 crontab -l | sed \"/run_operational_forecast.py/ s|^\S* \S* \S* \S* \S*|\$R_CRON_TIME_STR|g\" | crontab - \n\
 \n\
-# Ejecutar cron \n\
+\043 Ejecutar cron \n\
 cron -fL 15 \n\
 \n" > /startup.sh
 RUN chmod a+x /startup.sh
