@@ -143,7 +143,8 @@ class Config:
                 r = input("Model/s was added or deleted. Do you want to drop current " +
                           "combined forecasts and update combined_models file? (y/n): ")
             except EOFError:
-                print('\r', end='')
+                sys.stdout.write("\033[F") # Cursor up one line
+                sys.stdout.write("\033[K") # Clear to the end of line
                 # When running in a container, input doesn't work and raise a EOFError
                 r = os.getenv('DROP_COMBINED_FORECASTS', default='n')
             if r.upper() in ['Y', 'YES', 'S', 'SI', 'T', 'TRUE']:
