@@ -62,7 +62,7 @@ def main(args):
     #defino ref dataset y target season
     seas = range(inim + args.leadtime[0], inim + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1991 if seas[-1] <= 12 else 1991
+    year_verif = 1991 if seas[-1] <= 12 else 1992
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     message = 'Var:' + args.variable[0] + ' IC:' + calendar.month_abbr[inim] +\
               ' Target season:' + SSS + ' ' + args.ctech + ' ' + args.wtech[0]
