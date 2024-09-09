@@ -168,7 +168,7 @@ class Model(object):
             if np.logical_or(np.logical_or(np.isnan(obs[i, j, k]),
                                            np.isnan(media[i, l, j, k])),
                              np.isnan(sigma[j, k])):
-                pdf_intensity = np.NaN
+                pdf_intensity = np.nan
             else:
                 with warnings.catch_warnings():
                     warnings.filterwarnings('error')
@@ -176,7 +176,7 @@ class Model(object):
                         pdf_intensity = norm.pdf(obs[i, j, k], loc=media[i, l, j, k],
                                                  scale=np.sqrt(sigma[j, k]))
                     except RuntimeWarning:
-                        pdf_intensity = np.NaN
+                        pdf_intensity = np.nan
 
             return pdf_intensity
         res = p.map(evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(), k.tolist())
