@@ -21,7 +21,35 @@ import netCDF4
 import numpy as np
 import shutil
 
+from script import ScriptControl
+
+
 cfg = configuration.Config.Instance()
+
+
+def parse_args() -> argparse.Namespace:
+
+  now = datetime.datetime.now()
+
+  parser = argparse.ArgumentParser(description='Download input data')
+
+  parser.add_argument('--download', nargs='+', default=['all'],
+    choices=['hindcast','operational','real_time','observation','all'], 
+    help='Indicates which input data should be downloaded')
+  parser.add_argument('--year', type=int, default=now.year,
+    help='Indicates input data of which years should be downloaded for operational and real-time execution')
+  parser.add_argument('--month', type=int, default=now.month,
+    help='Indicates input data of which months should be downloaded for real-time execution')
+  parser.add_argument('--re-check', action='store_true', dest='recheck',
+    help='Indicates if previously downloaded files must be checked or not')
+  parser.add_argument('--re-download', action='store_true', dest='redownload',
+    help='Indicates if previously downloaded files must be downloaded again')
+  parser.add_argument('--models', nargs='+', default=[],
+    choices=[item[0] for item in cfg.get('models')[1:]],
+    help='Indicates which models should be considered when downloading input files')
+
+  return parser.parse_args()
+
 
 def generate_download_url(variable, forecast_start_year, forecast_start_month, member_or_realization, model_config_data, data_type):
   model_specific_url = (f"{model_config_data.url_model_part}/" + 
@@ -243,46 +271,27 @@ def download_file(download_url, filename, variable):
 # ==================================================================================================
 if __name__ == "__main__":
 
-  # Set pid file
-  pid_file = '/tmp/ereg-download.pid'
+  # Catch and parse command-line arguments
+  args: argparse.Namespace = parse_args()
 
-  # Get PID and save it to a file
-  with open(pid_file, 'w') as f:
-    f.write(f'{os.getpid()}')
+  # Create script control
+  script = ScriptControl('ereg-download')
 
-  # Get start time
-  now = datetime.datetime.now()
-  
-  # PROCESAR ARGUMENTOS
-  parser = argparse.ArgumentParser(description='Download input data')
-  parser.add_argument('--download', nargs='+', default=['all'],
-    choices=['hindcast','operational','real_time','observation','all'], 
-    help='Indicates which input data should be downloaded')
-  parser.add_argument('--year', type=int, default=now.year,
-    help='Indicates input data of which years should be downloaded for operational and real-time execution')
-  parser.add_argument('--month', type=int, default=now.month,
-    help='Indicates input data of which months should be downloaded for real-time execution')
-  parser.add_argument('--re-check', action='store_true', dest='recheck',
-    help='Indicates if previously downloaded files must be checked or not')
-  parser.add_argument('--re-download', action='store_true', dest='redownload',
-    help='Indicates if previously downloaded files must be downloaded again')
-  parser.add_argument('--models', nargs='+', default=[],
-    choices=[item[0] for item in cfg.get('models')[1:]],
-    help='Indicates which models should be considered when downloading input files')
-  
-  # EXTRACT DATE FROM ARGS
-  args = parser.parse_args()
-  # Args for testing purposes
-  # args = argparse.Namespace(download=['all'], year=2020, month=6, recheck=False, redownload=True)
-  
-  
+  # Check for others scripts
+  script_hindcast = ScriptControl('ereg-run-hindcast-fcst')
+  script_hindcast.assert_not_running()
+  script_operational = ScriptControl('ereg-run-operational-fcst')
+  script_operational.assert_not_running()
+
+  # Start script execution
+  script.start_script()
+
   # INFORMAR SOBRE VERIFICACIÓN Y RE-DESCARGA DE ARCHIVOS
   if args.redownload:
     cfg.logger.info(f'Previously downloaded files will be downloaded again!')
   else:
     cfg.logger.info(f'Previously downloaded files will{" " if args.recheck else " not "}be verified!')
-    
-  
+
   # IDENTIFICAR MODELOS A SER UTILIZADOS
   models_data = cfg.get('models')
   models_urls = cfg.get('models_url')
@@ -291,11 +300,11 @@ if __name__ == "__main__":
     right=pd.DataFrame(models_urls[1:], columns=models_urls[0]),
     how="inner", on="model"
   )
-  
+
   # SELECCIONAR SOLO MODELOS INDICADOS EN EL PARÁMETRO "--models"
   if args.models:
     df_modelos = df_modelos.query(f'model in {args.models}')
-  
+
   # GENERAR LINKS DE DESCARGA
   df_links = pd.DataFrame(columns=['FILENAME','DOWNLOAD_URL','DOWNLOADED','TYPE'])
   if any(item in ['hindcast', 'all'] for item in args.download):
@@ -324,14 +333,14 @@ if __name__ == "__main__":
     df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}observation links: {round(end - start, 2)}')
-  
+
   total_files = df_links['DOWNLOADED'].count()
   n_downloaded_files = df_links['DOWNLOADED'].sum()
   n_files_to_download = total_files - n_downloaded_files
   cfg.logger.info(f"Total files: {total_files}, "+
                   f"Downloaded files: {n_downloaded_files}, "+
                   f"Not yet downloaded files: {n_files_to_download}")
-  
+
   # DESCARGAR ARCHIVOS
   cfg.logger.info("Running files download process ... ")
   count_downloaded_files, count_failed_downloads = 0, 0
@@ -356,7 +365,7 @@ if __name__ == "__main__":
                     f"{count_failed_downloads} downloads failed!")
   else:
     cfg.logger.info("There isn't files to download!!")
-    
+
   if cfg.email and count_failed_downloads:
     cfg.logger.info("Sending email with download failures")
     helpers.send_email(
@@ -367,5 +376,5 @@ if __name__ == "__main__":
       body = df_links.query('DOWNLOADED == False').to_html()             
     )
 
-  # Finally, remove pid file
-  os.remove(pid_file)
+  # End script execution
+  script.end_script_execution()

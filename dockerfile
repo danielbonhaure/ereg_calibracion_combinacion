@@ -87,7 +87,8 @@ RUN python3 -m pip install --upgrade pip && \
         cdo \
         nco \
         python-crontab \
-        PyYAML
+        PyYAML \
+        redis[hiredis]
 # Shapely y cartopy deben instalarse sin binarios (ver: https://github.com/SciTools/cartopy/issues/837)
 RUN python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels \
         --no-binary :all: shapely Cartopy
@@ -228,6 +229,14 @@ ARG GRP_NAME
 ARG D_CRON_TIME_STR
 ARG R_CRON_TIME_STR
 
+# Install OS packages
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
+    apt-get -y -qq --no-install-recommends install \
+        # to check container health
+        redis-tools && \
+    rm -rf /var/lib/apt/lists/*
+
 # Set read-only environment variables
 ENV EREG_HOME=${EREG_HOME}
 ENV EREG_DATA=${EREG_DATA}
@@ -276,10 +285,9 @@ RUN chmod a+x /startup.sh
 
 # Create script to check container health
 RUN printf "#!/bin/bash\n\
-if [ \$(ls /tmp/ereg-download.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep 'download_inputs.py' | grep -v 'grep' | wc -l) == 0 ] || \n\
-   [ \$(ls /tmp/ereg-run-operational-fcst.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep 'run_operational_forecast.py' | grep -v 'grep' | wc -l) == 0 ] \n\
+if [ \$(find ${EREG_HOME} -type f -name '*.pid' 2>/dev/null | wc -l) != 0 ] || \n\
+   [ \$(echo 'KEYS *' | redis-cli -h \${REDIS_HOST} 2>/dev/null | grep -c ereg) != 0 ] && \n\
+   [ \$(ps -ef | grep -v 'grep' | grep -c 'ereg' | wc -l) == 0 ] \n\
 then \n\
   exit 1 \n\
 else \n\

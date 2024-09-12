@@ -219,10 +219,6 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
-# Python and Pycharm files and folders
-.idea
-*.py
-
 # Shell scripts
 *.sh
 

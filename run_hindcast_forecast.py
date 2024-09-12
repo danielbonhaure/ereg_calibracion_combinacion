@@ -15,8 +15,46 @@ from combination import main as combination
 from plot_forecast import main as plot_forecast
 from plot_observed_category import main as plot_observed_category
 from create_output_files_descriptor import main as create_descriptors
+from script import ScriptControl
+
 
 cfg = configuration.Config.Instance()
+
+
+def parse_args() -> argparse.Namespace:
+
+    parser = argparse.ArgumentParser(description='Run hindcast forecast')
+
+    groupm = parser.add_mutually_exclusive_group()
+    groupm.add_argument('--models', nargs='+', dest='models',
+        default=[], choices=[item[0] for item in cfg.get('models')[1:]], 
+        help='Indicates which models should be considered (only used for calibration purposes).')
+    groupm.add_argument('--no-models', nargs='+', dest='no_models', 
+        default=[], choices=[item[0] for item in cfg.get('models')[1:]], 
+        help='Indicates which models should be excluded (only used for calibration purposes).')
+
+    parser.add_argument('--variables', nargs='+', 
+        default=["tref", "prec"], choices=["tref", "prec"],
+        help='Variables that will be considered in the forecast generation process.')
+    parser.add_argument('--weighting', nargs='+', 
+        default=["same", "pdf_int", "mean_cor"], choices=["same", "pdf_int", "mean_cor"],
+        help='Weighting methods used when combining models.')
+    parser.add_argument('--combination', nargs='+', 
+        default=["wpdf", "wsereg", "count"], choices=["wpdf", "wsereg", "count"],
+        help='Combination methods (count will be ignored when calibration is set as operational).')
+    parser.add_argument('--overwrite', action='store_true', 
+        help='Indicates if previous generated files should be overwrite or not.')
+    parser.add_argument('--ignore-calibration', action='store_false', dest='calibrate', 
+        help='Indicates if the calibration step should be ignored or not.')
+    parser.add_argument('--ignore-combination', action='store_false', dest='combine', 
+        help='Indicates if the combination step should be ignored or not.')
+    parser.add_argument('--ignore-plotting', action='store_false', dest='plot', 
+        help='Indicates if the plotting step should be ignored or not.')
+    parser.add_argument('--no-cross-validation', action='store_false', dest='cross_validate', 
+        help='Indicates if the cross-validation should be done or not (by default, cross-validation is done).')
+
+    return parser.parse_args()
+
 
 def main(args):
 
@@ -53,64 +91,44 @@ def main(args):
             argparse.Namespace(desc_file_type='hindcast_forecasts', variables=args.variables,
                                ic_months=range(1, 12+1), leadtimes=range(1, 7+1),
                                weighting=args.weighting, combination=args.combination))
-                
+
 
 # ==================================================================================================
 if __name__ == "__main__":
 
-    # Set pid file
-    pid_file = '/tmp/ereg-run-hindcast-fcst.pid'
+    # Catch and parse command-line arguments
+    parsed_args: argparse.Namespace = parse_args()
 
-    # Get PID and save it to a file
-    with open(pid_file, 'w') as f:
-        f.write(f'{os.getpid()}')
-  
-    # Defines parser data
-    parser = argparse.ArgumentParser(description='Run hindcast forecast')
-    groupm = parser.add_mutually_exclusive_group()
-    groupm.add_argument('--models', nargs='+', dest='models',
-        default=[], choices=[item[0] for item in cfg.get('models')[1:]], 
-        help='Indicates which models should be considered (only used for calibration purposes).')
-    groupm.add_argument('--no-models', nargs='+', dest='no_models', 
-        default=[], choices=[item[0] for item in cfg.get('models')[1:]], 
-        help='Indicates which models should be excluded (only used for calibration purposes).')
-    parser.add_argument('--variables', nargs='+', 
-        default=["tref", "prec"], choices=["tref", "prec"],
-        help='Variables that will be considered in the forecast generation process.')
-    parser.add_argument('--weighting', nargs='+', 
-        default=["same", "pdf_int", "mean_cor"], choices=["same", "pdf_int", "mean_cor"],
-        help='Weighting methods used when combining models.')
-    parser.add_argument('--combination', nargs='+', 
-        default=["wpdf", "wsereg", "count"], choices=["wpdf", "wsereg", "count"],
-        help='Combination methods (count will be ignored when calibration is set as operational).')
-    parser.add_argument('--overwrite', action='store_true', 
-        help='Indicates if previous generated files should be overwrite or not.')
-    parser.add_argument('--ignore-calibration', action='store_false', dest='calibrate', 
-        help='Indicates if the calibration step should be ignored or not.')
-    parser.add_argument('--ignore-combination', action='store_false', dest='combine', 
-        help='Indicates if the combination step should be ignored or not.')
-    parser.add_argument('--ignore-plotting', action='store_false', dest='plot', 
-        help='Indicates if the plotting step should be ignored or not.')
-    parser.add_argument('--no-cross-validation', action='store_false', dest='cross_validate', 
-        help='Indicates if the cross-validation should be done or not (by default, cross-validation is done).')
+    # Check initial conditions
+    script_download = ScriptControl('ereg-download')
+    script_download.assert_not_running()
+    script_operational = ScriptControl('ereg-run-operational-fcst')
+    script_operational.assert_not_running()
 
-    # Extract data from args
-    args = parser.parse_args()
-
-    # Set error as not detected
-    error_detected = False
-    
-    # Run hindcast forecast
-    start = time.time()
     try:
-        main(args)
+        # Get current time
+        start = time.time()
+
+        # Create script control
+        script = ScriptControl('ereg-run-hindcast-fcst')
+
+        # Start script execution
+        script.start_script()
+
+        # Execute main function
+        main(parsed_args)
+
     except Exception as e:
-        error_detected = True
-        cfg.logger.error(f"Failed to run \"run_hindcast_forecast.py\". Error: {e}.")
+        error_detected = True  # Set error_detected flag
         raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
+
+    except SystemExit:
+        error_detected = False  # when script raise SystemExit
+
     else:
-        error_detected = False
-        os.remove(pid_file)  # Remove pid file only if there were no errors
+        error_detected = False  # Set error_detected flag
+        script.end_script_execution()
+
     finally:
         end = time.time()
         err_pfx = "with" if error_detected else "without"
