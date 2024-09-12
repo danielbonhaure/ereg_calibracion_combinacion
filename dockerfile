@@ -14,7 +14,7 @@
 ##########################
 
 # Set python version
-ARG PYTHON_VERSION="3.10"
+ARG PYTHON_VERSION="3.12"
 
 # Set EREG installation folder
 ARG EREG_HOME="/opt/ereg"
