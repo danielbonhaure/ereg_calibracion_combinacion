@@ -195,7 +195,8 @@ class Observ(object):
 
     def computo_quintiles(self, observation, CV_opt):
         """obtains quintiles limits"""
-        print("observed quintiles limits")
+        message = "observed quintiles limits"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         ntimes = observation.shape[0]
         if CV_opt: #validacion cruzada ventana 1 anio
             i = np.arange(ntimes)

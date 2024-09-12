@@ -137,6 +137,8 @@ def main(args):
                 pronos_dt = modelo.remove_trend(pronos, True)
                 for_terciles = modelo.computo_terciles(pronos_dt, True)
                 forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
+                message = f"obs_dt shape: {obs_dt.shape} pronos_dt shape: {pronos_dt.shape}"
+                print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
                 [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
                                                                    obs_dt,
                                                                    True)
@@ -182,6 +184,8 @@ def main(args):
                 pronos_dt = modelo.remove_trend(pronos, True)
                 for_terciles = modelo.computo_terciles(pronos_dt, True)
                 forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
+                message = f"obs_dt shape: {obs_dt.shape} pronos_dt shape: {pronos_dt.shape}"
+                print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
                 [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
                                                                        obs_dt,
                                                                        True)

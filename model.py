@@ -52,8 +52,7 @@ class Model(object):
         self.hind_end = hind_end
         self.ext = extension
         self.rt_ensembles = rt_ensamble
-        print("") if not cfg.get('use_logger') else cfg.logger.info("")
-        message = f"Processing model {self.name} from {self.institution}"
+        message = f"Loading/processing model {self.name} from {self.institution}"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     #imprimir caracteristicas generales del modelo
     def __str__(self):
