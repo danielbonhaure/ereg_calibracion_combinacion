@@ -55,18 +55,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--overwrite', action='store_true', 
         help='Indicates if previous generated files should be overwrite or not.')
 
+    parser.add_argument('--calibrate', action='store_true', dest='calibrate',
+        help='Indicates if the calibration steps (both, the main and the SISSA specific) should be performed or not.')
     groupc = parser.add_mutually_exclusive_group()
-    groupc.add_argument('--calibrate', action='store_true', dest='calibrate', 
-        help='Indicates if the calibration step should be performed or not.')
-    groupc.add_argument('--ignore-calibration', action='store_false', dest='calibrate', 
-        help='Indicates if the calibration step should be ignored or not.')
+    groupc.add_argument('--ignore-main-calibration', action='store_true', dest='ignore_main_calibration',
+        help='Indicates if the main calibration step should be ignored or not.')
+    groupc.add_argument('--ignore-sissa-calibration', action='store_true', dest='ignore_sissa_calibration',
+        help='Indicates if the SISSA specific calibration step should be ignored or not.')
 
     parser.add_argument('--ignore-mme-param-gen', action='store_false', dest='mme_param_gen', 
         help='Indicates if the mme parameters generation step should be ignored or not.')
-    parser.add_argument('--ignore-combination', action='store_false', dest='combine', 
+
+    parser.add_argument('--ignore-main-combination', action='store_false', dest='combine', 
         help='Indicates if the combination step should be ignored or not.')
-    parser.add_argument('--ignore-plotting', action='store_false', dest='plot', 
+    parser.add_argument('--ignore-sissa-combination', action='store_false', dest='combine_sissa',
+        help='Indicates if the SISSA specific combination step should be ignored or not.')
+    parser.add_argument('--ignore-main-plotting', action='store_false', dest='plot', 
         help='Indicates if the plotting step should be ignored or not.')
+    parser.add_argument('--ignore-sissa-plotting', action='store_false', dest='plot_sisssa',
+        help='Indicates if the SISSA specific plotting step should be ignored or not.')
+
     parser.add_argument('--cross-validation', action='store_true', dest='cross_validate', 
         help='Indicates if the cross-validation should be done or not (by default, cross-validation is not done).')
 
@@ -74,14 +82,16 @@ def parse_args() -> argparse.Namespace:
 
 
 def main(args):
-  
-    if args.calibrate:
+
+    if args.calibrate or (not args.ignore_main_calibration and args.ignore_sissa_calibration):
         cfg.logger.info("Starting calibration")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
                 for m in range(1, 12+1) if not args.month else [args.month]:  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)
                     calibration(argparse.Namespace(variable=[v], IC=[m], leadtime=[l], CV=args.cross_validate,
                                                    OW=args.overwrite, no_models=args.no_models, models=args.models))
+
+    if args.calibrate or (args.ignore_main_calibration and not args.ignore_sissa_calibration):
         cfg.logger.info("Starting calibration SISSA")
         for v in args.variables:  # loop sobre las variables a calibrar
             for m in range(1, 12+1) if not args.month else [args.month]:  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)
@@ -104,6 +114,7 @@ def main(args):
                 for c, w in itertools.product(args.combination, args.weighting): 
                     real_time_combination(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], 
                                                              leadtime=[l], no_models=[], ctech=c, wtech=[w]))
+    if args.combine_sissa:
         cfg.logger.info("Starting combination SISSA")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
@@ -117,6 +128,7 @@ def main(args):
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
                 plot_rt_forecast(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], leadtime=[l],
                                                     weighting=args.weighting, combination=args.combination))
+    if args.plot_sissa:
         cfg.logger.info("Starting plotting SISSA")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
