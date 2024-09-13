@@ -43,7 +43,7 @@ def main(args):
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
     nx = int(np.abs (coords['lon_e'] - coords['lon_w']) + 1) #does for domains beyond greenwich
-    nyears = int(modelos[0]['fechaf'] - modelos[0]['fechai'] + 1)
+    nyears = 30 # int(modelos[0]['fechaf'] - modelos[0]['fechai'] + 1)
     if args.ctech == 'wpdf':
         message = "wpdf not implemented - only wsereg"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
@@ -152,7 +152,7 @@ def main(args):
     empty_forecast = np.sum(np.sum(np.isnan(prono_actual_dt), axis=1), axis=0) == (nx * ny) # modificado
     prono_actual_dt = np.rollaxis(prono_actual_dt * np.repeat(weight, nmembersf, axis=2),
                                   2, 0)
-    K_mme = K_mme[0, :, :, :]
+    K_mme = np.tile(K_mme[0, 0, :, :], (np.shape(prono_actual_dt)[0], 1, 1))
     prono_actual_dt[empty_forecast, :, :] = np.nan
     prono_actual_dt = prono_actual_dt * K_mme + (1 - K_mme) *\
             np.nanmean(prono_actual_dt, axis = 0)
