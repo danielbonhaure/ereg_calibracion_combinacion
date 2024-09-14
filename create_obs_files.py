@@ -18,7 +18,8 @@ def main(args):
 
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1991 if seas[-1] <= 12 else 1992
+    year_hcst_ini = 1991 if seas[-1] <= 12 else 1992
+    year_hcst_fin = 2020 if seas[-1] <= 12 else 2021
     sss_str = "".join(calendar.month_abbr[i][0] for i in sss)
 
     mensaje = "Processing " + args.variable[0] + " observations for " + sss_str + " initialized in " + str(args.IC[0])
@@ -27,15 +28,15 @@ def main(args):
     # Creando archivo 1 -- calibration.py
     if args.CV:
         archivo1 = Path(base_path, cfg.get('folders').get('data').get('observations'),
-                        'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + sss_str + '.npz')
+                        'obs_' + args.variable[0] + '_' + str(year_hcst_ini) + '_' + sss_str + '.npz')
         if not archivo1.is_file() or args.OW:
             if args.variable[0] == 'prec':
-                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991, 2020)
+                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', year_hcst_ini, year_hcst_fin)
             else:
-                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991, 2020)
+                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', year_hcst_ini, year_hcst_fin)
 
             [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[sss[-1]],
-                                                             year_verif,
+                                                             year_hcst_ini,
                                                              coords['lat_s'],
                                                              coords['lat_n'],
                                                              coords['lon_w'],
@@ -50,15 +51,15 @@ def main(args):
     # Creando archivo 2 (se utiliza solo con la validación cruzada (cross-validation) -- calibration.py
     if np.logical_not(args.CV):
         archivo2 = Path(base_path, cfg.get('folders').get('data').get('observations'),
-                        'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + sss_str + '_parameters.npz')
+                        'obs_' + args.variable[0] + '_' + str(year_hcst_ini) + '_' + sss_str + '_parameters.npz')
         if not archivo2.is_file() or args.OW:
             if args.variable[0] == 'prec':
-                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991, 2020)
+                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', year_hcst_ini, year_hcst_fin)
             else:
-                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991, 2020)
+                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', year_hcst_ini, year_hcst_fin)
 
             [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[sss[-1]],
-                                                             year_verif,
+                                                             year_hcst_ini,
                                                              coords['lat_s'],
                                                              coords['lat_n'],
                                                              coords['lon_w'],
@@ -71,15 +72,15 @@ def main(args):
 
     # Creando archivo con quintiles (archivo con extremos para gráficos SISSA) -- calibration_sissa.py
     archivo3 = Path(base_path, cfg.get('folders').get('data').get('observations'),
-                    'obs_extremes_' + args.variable[0] + '_' + str(year_verif) +
+                    'obs_extremes_' + args.variable[0] + '_' + str(year_hcst_ini) +
                     '_' + sss_str + '_parameters.npz')
     if not archivo3.is_file() or args.OW:
         if args.variable[0] == 'prec':
-            obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991, 2020)
+            obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', year_hcst_ini, year_hcst_fin)
         else:
-            obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991, 2020)
+            obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', year_hcst_ini, year_hcst_fin)
         [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[sss[-1]],
-                                                         year_verif,
+                                                         year_hcst_ini,
                                                          coords['lat_s'],
                                                          coords['lat_n'],
                                                          coords['lon_w'],
