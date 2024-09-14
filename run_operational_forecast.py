@@ -66,11 +66,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--ignore-mme-param-gen', action='store_false', dest='mme_param_gen', 
         help='Indicates if the mme parameters generation step should be ignored or not.')
 
-    parser.add_argument('--ignore-main-combination', action='store_false', dest='combine', 
+    parser.add_argument('--ignore-combination', action='store_false', dest='combine', 
+        help='Indicates if the combination step should be ignored or not.')
+    parser.add_argument('--ignore-main-combination', action='store_false', dest='combine_main', 
         help='Indicates if the combination step should be ignored or not.')
     parser.add_argument('--ignore-sissa-combination', action='store_false', dest='combine_sissa',
         help='Indicates if the SISSA specific combination step should be ignored or not.')
-    parser.add_argument('--ignore-main-plotting', action='store_false', dest='plot', 
+
+    parser.add_argument('--ignore-plotting', action='store_false', dest='plot', 
+        help='Indicates if the plotting step should be ignored or not.')
+    parser.add_argument('--ignore-main-plotting', action='store_false', dest='plot_main', 
         help='Indicates if the plotting step should be ignored or not.')
     parser.add_argument('--ignore-sissa-plotting', action='store_false', dest='plot_sissa',
         help='Indicates if the SISSA specific plotting step should be ignored or not.')
@@ -107,14 +112,14 @@ def main(args):
                     get_mme_parameters(argparse.Namespace(variable=[v], IC=[args.month], leadtime=[l], 
                                                           OW=args.overwrite, no_models=[], wtech=[w]))
 
-    if args.combine:
+    if args.combine or args.combine_main:
         cfg.logger.info("Starting combination")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
                 for c, w in itertools.product(args.combination, args.weighting): 
                     real_time_combination(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], 
                                                              leadtime=[l], no_models=[], ctech=c, wtech=[w]))
-    if args.combine_sissa:
+    if args.combine or args.combine_sissa:
         cfg.logger.info("Starting combination SISSA")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
@@ -122,13 +127,13 @@ def main(args):
                     real_time_combination_sissa(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"],
                                                                    leadtime=[l], no_models=[], ctech=c, wtech=[w]))
   
-    if args.plot:
+    if args.plot or args.plot_main:
         cfg.logger.info("Starting plotting")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
                 plot_rt_forecast(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], leadtime=[l],
                                                     weighting=args.weighting, combination=args.combination))
-    if args.plot_sissa:
+    if args.plot or args.plot_sissa:
         cfg.logger.info("Starting plotting SISSA")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
