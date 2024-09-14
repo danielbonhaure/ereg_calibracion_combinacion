@@ -72,7 +72,7 @@ def parse_args() -> argparse.Namespace:
         help='Indicates if the SISSA specific combination step should be ignored or not.')
     parser.add_argument('--ignore-main-plotting', action='store_false', dest='plot', 
         help='Indicates if the plotting step should be ignored or not.')
-    parser.add_argument('--ignore-sissa-plotting', action='store_false', dest='plot_sisssa',
+    parser.add_argument('--ignore-sissa-plotting', action='store_false', dest='plot_sissa',
         help='Indicates if the SISSA specific plotting step should be ignored or not.')
 
     parser.add_argument('--cross-validation', action='store_true', dest='cross_validate', 
