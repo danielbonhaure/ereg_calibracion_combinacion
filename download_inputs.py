@@ -207,6 +207,7 @@ def links_to_download_observation_for_verification(recheck, redownload):
 
 def modify_downloaded_file_if_needed(downloaded_file):
   #
+  now = datetime.datetime.now()
   tempfile = str(downloaded_file).replace('.nc', '_TMP.nc')
   #
   filename = 'prec_monthly_nmme_cpc.nc'
@@ -214,8 +215,8 @@ def modify_downloaded_file_if_needed(downloaded_file):
     cfg.logger.info(f'Modifying file {filename}. Renaming variable "prate" to "prec".')
     with netCDF4.Dataset(downloaded_file, "r+", format="NETCDF4") as nc:
       nc.renameVariable('prate', 'prec')
-    cfg.logger.info(f'Modifying file {filename}. Selecting years (from 1991 to 2020).')
-    cdo.Cdo().selyear('1991/2020', input=downloaded_file, output=tempfile)
+    cfg.logger.info(f'Modifying file {filename}. Selecting years (from 1991 to {now.year}).')
+    cdo.Cdo().selyear(f'1991/{now.year}', input=downloaded_file, output=tempfile)
     os.replace(tempfile, downloaded_file)
   #
   filename = 'tref_monthly_nmme_ghcn_cams.nc'
@@ -223,6 +224,8 @@ def modify_downloaded_file_if_needed(downloaded_file):
     cfg.logger.info(f'Modifying file {filename}. Renaming variable "t2m" to "tref".')
     with netCDF4.Dataset(downloaded_file, "r+", format="NETCDF4") as nc:
       nc.renameVariable('t2m', 'tref')
+    cfg.logger.info(f'Modifying file {filename}. Selecting years (from 1991 to {now.year}).')
+    cdo.Cdo().selyear(f'1991/{now.year}', input=downloaded_file, output=tempfile)
     cfg.logger.info(f'Modifying file {filename}. Adding 273.15 to values in file.')
     cdo.Cdo().addc("273.15", input=downloaded_file, output=tempfile)
     os.replace(tempfile, downloaded_file)
