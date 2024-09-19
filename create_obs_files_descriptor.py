@@ -76,12 +76,12 @@ if __name__ == "__main__":
         main(args)
     except Exception as e:
         error_detected = True
-        cfg.logger.error(f"Failed to run \"create_output_files_descriptors.py\". Error: {e}.")
+        cfg.logger.error(f"Failed to run \"create_obs_files_descriptor.py\". Error: {e}.")
         raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
     else:
         error_detected = False
     finally:
         end = time.time()
         err_pfx = "with" if error_detected else "without"
-        message = f"Total time to run \"create_output_files_descriptors.py\" ({err_pfx} errors): {end - start}"
+        message = f"Total time to run \"create_obs_files_descriptor.py\" ({err_pfx} errors): {end - start}"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
