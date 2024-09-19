@@ -18,8 +18,8 @@ def main(args):
 
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_hcst_ini = 1991 if seas[-1] <= 12 else 1992
-    year_hcst_fin = 2020 if seas[-1] <= 12 else 2021
+    year_hcst_ini = args.first_hindcast_year if seas[-1] <= 12 else args.first_hindcast_year + 1
+    year_hcst_fin = args.last_hindcast_year if seas[-1] <= 12 else args.last_hindcast_year + 1
     sss_str = "".join(calendar.month_abbr[i][0] for i in sss)
 
     mensaje = "Processing " + args.variable[0] + " observations for " + sss_str + " initialized in " + str(args.IC[0])
@@ -110,6 +110,10 @@ if __name__ == "__main__":
     parser.add_argument('--variables', nargs='+',
                         default=["tref", "prec"], choices=["tref", "prec"],
                         help='Variables that will be considered.')
+    parser.add_argument('--first_hindcast_year', type=int, default=1991,
+                        help='First hindcast period year (ej: 1991)')
+    parser.add_argument('--last_hindcast_year', type=int, default=2020,
+                        help='Last hindcast period year (ej: 2020)')
     parser.add_argument('--CV', action='store_true', help='Cross-validated mode')
     parser.add_argument('--OW', action='store_true', help='Overwrite previous observations files')
 

@@ -61,8 +61,8 @@ if __name__ == "__main__":
     parser.add_argument('--ic-months', type=int, nargs='+', dest='ic_months',
                         default=range(1, 12+1), choices=range(1, 12+1),
                         help='Months of initial conditions (from 1 for Jan to 12 for Dec)')
-    parser.add_argument('--first_hindcast_year', type=int, default=1982,
-                        help='First hindcast period year (ej: 1982)')
+    parser.add_argument('--first_hindcast_year', type=int, default=1991,
+                        help='First hindcast period year (ej: 1991)')
 
     # Extract data from args
     args = parser.parse_args()
