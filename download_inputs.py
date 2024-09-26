@@ -106,21 +106,34 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1):
         if recheck:
-          cfg.logger.info(f'Checking files: for: model={model_data.model}, variable={variable}, member={member}')
+          cfg.logger.info(f'Checking hindcast files for: model={model_data.model}, variable={variable}, member={member}')
         for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
           for month in range(1, 12+1, 1):
             FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                                   cfg.get('folders').get('nmme').get('hindcast'))
-
             if model_data.model == "GEM5.2-NEMO":
               DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "hindcast")
             else:
               DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
-
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
             DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
             yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
                    'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'hindcast', 'VARIABLE': variable}
+        if model_data.hindcast_end < 2020:
+          if recheck:
+            cfg.logger.info(f'Checking real time files (used as hindcast) for: model={model_data.model}, variable={variable}, member={member}')
+          for year in range(model_data.hindcast_end+1, 2020+1, 1):
+            for month in range(1, 12+1, 1):
+              FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
+                                    cfg.get('folders').get('nmme').get('real_time'))
+              if model_data.model == "GEM5.2-NEMO":
+                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "real_time")
+              else:
+                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
+              FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
+              DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
+              yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
+                     'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'real_time', 'VARIABLE': variable}
 
 
 def links_to_download_operational(df_modelos, year, recheck, redownload):
@@ -128,16 +141,16 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
   now = datetime.datetime.now()
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
-      for member in range(1, model_data.rt_members+1, 1): 
+      for member in range(1, model_data.rt_members+1, 1):
+        if recheck:
+          cfg.logger.info(f'Checking operational files for: model={model_data.model}, variable={variable}, member={member}')
         for month in range(1, now.month+1 if year == now.year else 12+1, 1):
           FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                                 cfg.get('folders').get('nmme').get('real_time'))
-
           if model_data.model == "GEM5.2-NEMO":
             DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "operational")
           else:
             DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
-
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
           DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
           yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
@@ -148,15 +161,15 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
   # 
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
-      for member in range(1, model_data.members+1, 1): 
+      for member in range(1, model_data.members+1, 1):
+        if recheck:
+          cfg.logger.info(f'Checking real_time files for: model={model_data.model}, variable={variable}, member={member}')
         FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                               cfg.get('folders').get('nmme').get('real_time'))
-
         if model_data.model == "GEM5.2-NEMO":
           DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "real_time")
         else:
           DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
-
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
         DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
         yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
@@ -376,7 +389,7 @@ if __name__ == "__main__":
       password = cfg.email.get('password'), 
       to_addrs = cfg.email.get('to_addrs'), 
       subject = 'Archivos no descargados - EREG SMN', 
-      body = df_links.query('DOWNLOADED == False').to_html()             
+      body = df_links.query('DOWNLOADED == False').to_html()
     )
 
   # End script execution
