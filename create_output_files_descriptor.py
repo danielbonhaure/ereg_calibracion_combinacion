@@ -19,7 +19,7 @@ def write_file_desc(fp_file: TextIO, fcst_file_type: str, fcst_file_path: Path, 
     fp_file.write(f'    path: ".",\n')
     fp_file.write(f'    name: "{fcst_file_path.name}",\n')
     if desc_file_type == 'hindcast_forecasts':
-        fp_file.write(f'    first_year_in_file: 1982,\n')
+        fp_file.write(f'    first_year_in_file: 1991,\n')
     fp_file.write('  }\n')
 
 
