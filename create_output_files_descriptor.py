@@ -90,6 +90,8 @@ def main(main_args: argparse.Namespace):
                     if main_args.desc_file_type == 'hindcast_forecasts':
                         archivo = Path(forecasts_folder, f'{first_part}_gp_01_same_count_hind.npz')
                         write_file_desc(fp_desc, 'ereg_prob_output', archivo, main_args.desc_file_type)
+                        archivo = Path(forecasts_folder, f'{first_part}_gp_01_same_count_hind_parameters.npz')
+                        write_file_desc(fp_desc, 'ereg_prob_output', archivo, main_args.desc_file_type)
 
 
 # ==================================================================================================
