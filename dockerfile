@@ -195,6 +195,8 @@ RUN apt-get -y -qq update && \
         htop procps \
         # to allow edit files
         vim \
+        # to manually download input files
+        wget \
         # to run process with cron
         cron && \
     rm -rf /var/lib/apt/lists/*
@@ -246,15 +248,17 @@ ENV D_CRON_TIME_STR=${D_CRON_TIME_STR}
 ENV R_CRON_TIME_STR=${R_CRON_TIME_STR}
 
 # Definir comandos para descarga y calibración de pronósticos
-ARG D_PYTHON_CMD="/usr/local/bin/python download_inputs.py --download operational --re-check"
-ARG R_PYTHON_CMD="/usr/local/bin/python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor --ignore-plotting"
+ARG DOWNLOAD_1_CMD="/usr/local/bin/python download_inputs.py --download real_time --re-check"
+ARG DOWNLOAD_2_CMD="/usr/local/bin/python download_inputs.py --download operational --re-check"
+ARG RUN_PYTHON_CMD="/usr/local/bin/python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor --ignore-plotting"
 
 # Crear archivo de configuración de CRON
 RUN printf "\n\
 \043 Download input data \n\
-${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${D_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
+${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${DOWNLOAD_1_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
+${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${DOWNLOAD_2_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
 \043 Run operational forecasts \n\
-${R_CRON_TIME_STR}  cd ${EREG_HOME} && ${R_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
+${R_CRON_TIME_STR}  cd ${EREG_HOME} && ${RUN_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
 \n" > ${EREG_HOME}/crontab.txt
 RUN chmod a+rw ${EREG_HOME}/crontab.txt
 
