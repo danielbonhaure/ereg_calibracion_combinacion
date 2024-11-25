@@ -89,9 +89,9 @@ RUN python3 -m pip install --upgrade pip && \
         python-crontab \
         PyYAML \
         redis[hiredis]
-# Shapely y cartopy deben instalarse sin binarios (ver: https://github.com/SciTools/cartopy/issues/837)
+# Install shapely and Cartopy (shapely is a dependency of Cartopy)
 RUN python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels \
-        --no-binary :all: shapely Cartopy
+        shapely Cartopy
 
 
 
