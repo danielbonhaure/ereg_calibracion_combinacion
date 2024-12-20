@@ -282,6 +282,9 @@ set -e \n\
 crontab -l | sed \"/download_inputs.py/ s|^\S* \S* \S* \S* \S*|\$D_CRON_TIME_STR|g\" | crontab - \n\
 crontab -l | sed \"/run_operational_forecast.py/ s|^\S* \S* \S* \S* \S*|\$R_CRON_TIME_STR|g\" | crontab - \n\
 \n\
+\043 Copiar variables de entorno del contenedor a /etc/environment \n\
+xargs --null --max-args=1 --arg-file=/proc/1/environ > ${APP_HOME}/crontab-envvars.txt \n\
+\n\
 \043 Ejecutar cron \n\
 cron -fL 15 \n\
 \n" > /startup.sh
