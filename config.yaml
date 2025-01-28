@@ -66,7 +66,7 @@ models:
   # [     CanCM4i,         CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ]
   - [       CCSM4,        COLA,        Y,        X,      10,        12,           1982,         2013,       nc,         10 ]
   - [       CESM1,        COLA,        Y,        X,      10,        12,           1991,         2020,       nc,         10 ]
-  - [       CFSv2,        NCEP,        Y,        X,      24,        10,           1982,         2010,       nc,         24 ]
+  - [       CFSv2,        NCEP,        Y,        X,      24,        10,           1982,         2011,       nc,         24 ]
   # [       CM2p1,        GFDL,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ]
   # [    FLOR-A06,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]
   # [    FLOR-B01,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]
