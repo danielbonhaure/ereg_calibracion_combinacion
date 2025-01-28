@@ -70,7 +70,7 @@ models:
   # [       CM2p1,        GFDL,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ]
   # [    FLOR-A06,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]
   # [    FLOR-B01,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]
-  - [       GEOS5,        NASA,        Y,        X,       4,         9,           1982,         2016,       nc,         10 ]
+  - [       GEOS5,        NASA,        Y,        X,       4,         9,           1982,         2017,       nc,         10 ]
   - [ GEM5.2-NEMO,         CMC,        Y,        X,      20,        12,           1990,         2020,       nc,         20 ]
   - [       SPEAR,        GFDL,        Y,        X,      15,        12,           1991,         2020,       nc,         30 ]
 
