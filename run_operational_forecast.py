@@ -109,8 +109,8 @@ def main(args):
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
                 for w in args.weighting: 
-                    get_mme_parameters(argparse.Namespace(variable=[v], IC=[args.month], leadtime=[l], 
-                                                          OW=args.overwrite, no_models=[], wtech=[w]))
+                    get_mme_parameters(argparse.Namespace(variable=[v], IC=[args.month], leadtime=[l], OW=args.overwrite,
+                                                          no_models=args.no_models, models=args.models, wtech=[w]))
 
     if args.combine and args.combine_main:
         cfg.logger.info("Starting combination")
@@ -118,14 +118,16 @@ def main(args):
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
                 for c, w in itertools.product(args.combination, args.weighting): 
                     real_time_combination(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], 
-                                                             leadtime=[l], no_models=[], ctech=c, wtech=[w]))
+                                                             leadtime=[l], no_models=args.no_models, models=args.models,
+                                                             ctech=c, wtech=[w]))
     if args.combine and args.combine_sissa:
         cfg.logger.info("Starting combination SISSA")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
                 for c, w in itertools.product(args.combination, args.weighting):
                     real_time_combination_sissa(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"],
-                                                                   leadtime=[l], no_models=[], ctech=c, wtech=[w]))
+                                                                   leadtime=[l], no_models=args.no_models, models=args.models, 
+                                                                   ctech=c, wtech=[w]))
   
     if args.plot and args.plot_main:
         cfg.logger.info("Starting plotting")

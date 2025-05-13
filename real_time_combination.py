@@ -33,6 +33,9 @@ def main(args):
     
     if args.no_models:  # si hay que descartar algunos modelos
         df_modelos = df_modelos.query(f"model not in {args.no_models}")
+    
+    if args.models:  # si hay que incluir solo algunos modelos
+        df_modelos = df_modelos.query(f"model in {args.models}")
         
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
             'fechai', 'fechaf', 'ext', 'rt_miembros']
@@ -234,9 +237,13 @@ if __name__ == "__main__":
         help='Initial conditions in "YYYY-MM-DD"')
     parser.add_argument('--leadtime', dest='leadtime', type=int, nargs=1,
         help='Forecast leadtime (in months, from 1 to 7)')
-    parser.add_argument('--no-models', nargs='+', dest='no_models', default=[],
-        choices=[item[0] for item in cfg.get('models')[1:]], 
-        help='Models to be discarded')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--models', nargs='+', dest='models', default=[],
+        choices=[item[0] for item in cfg.get('models')[1:]],
+        help="Models to be included")
+    group.add_argument('--no-models', nargs='+', dest='no_models', default=[],
+        choices=[item[0] for item in cfg.get('models')[1:]],
+        help="Models to be discarded")
         
     subparsers = parser.add_subparsers(help="Combination technique")
     

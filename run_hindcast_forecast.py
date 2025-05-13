@@ -74,7 +74,9 @@ def main(args):
                     for c, w in itertools.product(args.combination, args.weighting): 
                         if c == 'count' and w != 'same':
                             continue
-                        combination(argparse.Namespace(variable=[v], IC=[m], leadtime=[l], no_models=[], ctech=c, wtech=[w]))
+                        combination(argparse.Namespace(variable=[v], IC=[m], leadtime=[l], 
+                                                       no_models=args.no_models, models=args.models, 
+                                                       ctech=c, wtech=[w]))
   
     if args.plot:
         cfg.logger.info("Starting plotting")
