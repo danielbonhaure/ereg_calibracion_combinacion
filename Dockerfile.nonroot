@@ -1,0 +1,135 @@
+
+##################################################################
+##                           README                             ##
+##################################################################
+## Este Dockerfile permite agregar un usuario non-root a cual-  ##
+## imagen pre-existente. Además, tanto el nuevo usuario como la ##
+## imagen resultante, están configurados de manera a permitir   ##
+## la realización de operaciones y/o tareas de desarrollo, man- ##
+## tenimiento y debub. Los principales aportes de esta nueva    ##
+## imágen son: la creación de un usuario non-root y la instala- ##
+## ción y configuración del comando sudo.                       ##
+##################################################################
+
+
+
+##########################
+## Set GLOBAL arguments ##
+##########################
+
+# Imagen en la que instalar Pycharm
+ARG BASE_IMAGE="debian:stable-slim"
+
+# Folders whose owner needs to be changed
+ARG USR_DIRS="/tmp /tmp"
+
+# Set crontab config filename
+ARG CRONTAB="crontab.conf"
+
+# Set user name and id
+ARG USR_NAME="nonroot"
+ARG USER_UID="1000"
+
+# Set group name and id
+ARG GRP_NAME="nonroot"
+ARG USER_GID="1000"
+
+# Set users passwords
+ARG ROOT_PWD="root"
+ARG USER_PWD=$USR_NAME
+
+
+
+###################################
+## Stage 1: Create non-root user ##
+###################################
+
+# Create image
+FROM ${BASE_IMAGE}
+
+# Renew ARGs
+ARG USR_DIRS
+ARG CRONTAB
+
+# Renew ARGs
+ARG USR_NAME
+ARG USER_UID
+ARG GRP_NAME
+ARG USER_GID
+ARG ROOT_PWD
+ARG USER_PWD
+
+# Install OS packages
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes upgrade && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
+        # to run sudo
+        sudo && \
+    rm -rf /var/lib/apt/lists/*
+
+# Modify root password
+RUN echo "root:${ROOT_PWD}" | chpasswd
+
+# Create a non-root user, so that the container can run as non-root
+# OBS: the UID and GID must be the same as the user that owns the
+# input and output volumes, so there aren't permissions problems!!
+# Due to an unresolved bug in the Go, --no-log-init must be added:
+# See: https://docs.docker.com/build/building/best-practices/#user
+# Some guidelines followed were:
+# https://medium.com/@at.sreelekshmi/the-importance-of-using-adduser-in-docker-2acd66a9858b
+# https://medium.com/@abaqueiro/best-security-practices-for-building-apps-inside-containers-3158c533a2b0
+RUN groupadd --gid ${USER_GID} ${GRP_NAME}
+RUN useradd --uid ${USER_UID} --gid ${USER_GID} --create-home \
+    --comment 'Non-root User' --no-log-init --shell /bin/bash \
+    ${USR_NAME}
+
+# Modify the password of non-root user
+RUN echo "${USR_NAME}:${USER_PWD}" | chpasswd
+
+# Change the owner of the USR_DIRS folder
+RUN chown -R ${USR_NAME}:${GRP_NAME} ${USR_DIRS}
+
+# Set permissions of files in USR_DIRS folder
+RUN chmod -R u=rw,g=r,o=r ${USR_DIRS}
+
+# Setup cron (if necessary)
+RUN count=$(find ${USR_DIRS} -type f -name ${CRONTAB} | wc -l) && [ ${count} = 1 ] \
+    && (cat $(find ${USR_DIRS} -type f -name ${CRONTAB})) | crontab -u ${USR_NAME} - \
+    || :  # para entender porque :, ver https://stackoverflow.com/a/49348392/5076110
+
+# Remove job for root user (if necessary)
+RUN count=$(find ${USR_DIRS} -type f -name ${CRONTAB} | wc -l) && [ ${count} = 1 ] \
+    && crontab -u root -r \
+    || :  # para entender porque :, ver https://stackoverflow.com/a/49348392/5076110
+
+# Add non-root user to sudoers and to adm group
+# The adm group was added to allow non-root user to see logs
+RUN usermod -aG sudo ${USR_NAME} && \
+    usermod -aG adm ${USR_NAME}
+
+# To allow sudo without password
+RUN echo "$USR_NAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/${USR_NAME} && \
+    chmod 0440 /etc/sudoers.d/${USR_NAME}
+
+# Access non-root user directory
+WORKDIR /home/${USR_NAME}
+
+# Switch to non-root user to avoid accidental container runs as root
+USER ${USR_NAME}
+
+
+
+#####################################################
+## Usage: Commands to Build and Run this container ##
+#####################################################
+
+
+# CONSTRUIR IMAGEN (NON-ROOT)
+# docker build \
+#   --tag nonroot-ereg:latest \
+#   --build-arg BASE_IMAGE="ghcr.io/danielbonhaure/ereg_calibracion_combinacion:ereg-core-v1.0" \
+#   --build-arg USR_DIRS="/opt/ereg /data/ereg" \
+#   --build-arg USER_UID=$(stat -c "%u" .) \
+#   --build-arg USER_GID=$(stat -c "%g" .) \
+#   --file Dockerfile.nonroot .
+
