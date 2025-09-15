@@ -259,8 +259,8 @@ ${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${DOWNLOAD_1_CMD} >> /proc/1/fd/1 2>> /pr
 ${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${DOWNLOAD_2_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
 \043 Run operational forecasts \n\
 ${R_CRON_TIME_STR}  cd ${EREG_HOME} && ${RUN_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
-\n" > ${EREG_HOME}/crontab.txt
-RUN chmod a+rw ${EREG_HOME}/crontab.txt
+\n" > ${EREG_HOME}/crontab.conf
+RUN chmod a+rw ${EREG_HOME}/crontab.conf
 
 # Crear archivo con variables de entorno
 RUN touch ${EREG_HOME}/crontab-envvars.txt \
@@ -272,7 +272,7 @@ RUN mv /etc/environment /etc/environment-old \
  && ln -s ${EREG_HOME}/crontab-envvars.txt /etc/environment
 
 # Setup CRON for root user
-RUN (cat ${EREG_HOME}/crontab.txt) | crontab -
+RUN (cat ${EREG_HOME}/crontab.conf) | crontab -
 
 # Crear script de inicio.
 RUN printf "#!/bin/bash \n\
@@ -493,7 +493,7 @@ RUN chown -R $USER_UID:$USER_GID $EREG_DATA
 RUN chmod u+s $(which cron)
 
 # Setup cron
-RUN (cat $EREG_HOME/crontab.txt) | crontab -u $USR_NAME -
+RUN (cat $EREG_HOME/crontab.conf) | crontab -u $USR_NAME -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
