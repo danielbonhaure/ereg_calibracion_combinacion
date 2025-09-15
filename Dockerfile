@@ -452,7 +452,7 @@ CMD ["sh", "/opt/pycharm/bin/pycharm.sh", "-Dide.browser.jcef.enabled=false"]
 #      --tag ereg-pycharm:latest \
 #      --build-arg USER_UID=$(stat -c "%u" .) \
 #      --build-arg USER_GID=$(stat -c "%g" .) \
-#      --file dockerfile .
+#      --file Dockerfile .
 #
 # 4- docker run -ti --rm \
 #      --name ereg-pycharm \
@@ -521,7 +521,7 @@ USER $USR_NAME
 #   --tag ghcr.io/danielbonhaure/ereg_calibracion_combinacion:ereg-core-v1.0 \
 #   --build-arg D_CRON_TIME_STR="0 0 15,16 * *" \
 #   --build-arg R_CRON_TIME_STR="0 0 17 * *" \
-#   --file dockerfile .
+#   --file Dockerfile .
 
 # LEVANTAR IMAGEN A GHCR
 # docker push ghcr.io/danielbonhaure/ereg_calibracion_combinacion:ereg-core-v1.0
@@ -532,7 +532,7 @@ USER $USR_NAME
 #   --tag ereg-nonroot:latest \
 #   --build-arg USER_UID=$(stat -c "%u" .) \  # ideally, the user id must be the uid of files in /data/ereg
 #   --build-arg USER_GID=$(stat -c "%g" .) \  # ideally, the group id must be the gid of files in /data/ereg
-#   --file dockerfile .
+#   --file Dockerfile .
 
 # CORRER OPERACIONALMENTE CON CRON
 # docker run --name ereg \
