@@ -13,8 +13,11 @@
 ## Set GLOBAL arguments ##
 ##########################
 
-# Set python version
+# Set Python version
 ARG PYTHON_VERSION="3.12"
+
+# Set Python image variant
+ARG IMG_VARIANT="-slim"
 
 # Set EREG installation folder
 ARG EREG_HOME="/opt/ereg"
@@ -26,9 +29,6 @@ ARG EREG_DATA="/data/ereg"
 ARG D_CRON_TIME_STR="0 0 15,16 * *"
 ARG R_CRON_TIME_STR="0 0 17 * *"
 
-# Set Pycharm version
-ARG PYCHARM_VERSION="2023.1"
-
 
 
 ######################################
@@ -36,7 +36,7 @@ ARG PYCHARM_VERSION="2023.1"
 ######################################
 
 # Create image
-FROM python:${PYTHON_VERSION}-slim AS py_builder
+FROM python:${PYTHON_VERSION}${IMG_VARIANT} AS py_builder
 
 # Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
@@ -46,9 +46,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes upgrade && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
         build-essential \
         # some project dependencies \
         cdo nco \
@@ -63,7 +63,8 @@ WORKDIR /usr/src/app
 
 # Upgrade pip and install dependencies
 RUN python3 -m pip install --upgrade pip && \
-    python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels \
+    python3 -m pip wheel --no-cache-dir --no-deps \
+    --wheel-dir /usr/src/app/wheels \
         numpy \
         dask \
         xarray \
@@ -78,8 +79,10 @@ RUN python3 -m pip install --upgrade pip && \
         PyYAML \
         redis[hiredis]
 # Install shapely and Cartopy (shapely is a dependency of Cartopy)
-RUN python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels \
-        shapely Cartopy
+RUN python3 -m pip wheel --no-cache-dir --no-deps \
+    --wheel-dir /usr/src/app/wheels \
+        shapely \
+        Cartopy
 
 
 
@@ -88,15 +91,15 @@ RUN python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheel
 ###############################################
 
 # Create image
-FROM python:${PYTHON_VERSION}-slim AS py_final
+FROM python:${PYTHON_VERSION}${IMG_VARIANT} AS py_final
 
 # Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes upgrade && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
         # some project dependencies \
         cdo nco \
         # to be able to use cartopy (Python)
@@ -111,9 +114,9 @@ RUN python3 -m pip install --upgrade pip && \
 
 
 
-###########################################
-## Stage 3: Install management packages  ##
-###########################################
+##########################################
+## Stage 3: Install management packages ##
+##########################################
 
 # Create image
 FROM py_final AS base_image
@@ -122,9 +125,8 @@ FROM py_final AS base_image
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
         # install Tini (https://github.com/krallin/tini#using-tini)
         tini \
         # to see process with pid 1
@@ -132,12 +134,38 @@ RUN apt-get -y -qq update && \
         # to allow edit files
         vim \
         # to manually download input files
-        wget \
+        curl wget \
         # to run process with cron
         cron && \
     rm -rf /var/lib/apt/lists/*
 
-# Setup cron to allow it run as a non root user
+# Create utils directory
+RUN mkdir -p /opt/utils
+
+# Create script to load environment variables
+RUN printf "#!/bin/bash \n\
+export \$(cat /proc/1/environ | tr '\0' '\n' | xargs -0 -I {} echo \"{}\") \n\
+\n" > /opt/utils/load-envvars
+
+# Create startup/entrypoint script
+RUN printf "#!/bin/bash \n\
+set -e \n\
+\043 https://docs.docker.com/reference/dockerfile/#entrypoint \n\
+exec \"\$@\" \n\
+\n" > /opt/utils/entrypoint
+
+# Create script to check the container's health
+RUN printf "#!/bin/bash \n\
+exit 0 \n\
+\n" > /opt/utils/check-healthy
+
+# Set minimal permissions to the utils scripts
+RUN chmod --recursive u=rx,g=rx,o=rx /opt/utils
+
+# Allows utils scripts to run as a non-root user
+RUN chmod u+s /opt/utils/load-envvars
+
+# Setup cron to allow it to run as a non-root user
 RUN chmod u+s $(which cron)
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
@@ -155,14 +183,22 @@ FROM base_image AS ereg_builder
 # Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Load EREG ARGs
+# Install OS packages
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
+        # to save scripts PID
+        # to check container health
+        redis-tools && \
+    rm -rf /var/lib/apt/lists/*
+
+# Renew ARGs
 ARG EREG_HOME
 ARG EREG_DATA
 
 # Create EREG_HOME folder
 RUN mkdir -p ${EREG_HOME}
 
-# Copy project
+# Copy EREG code
 COPY *.py ${EREG_HOME}
 COPY *.sh ${EREG_HOME}
 COPY *.md ${EREG_HOME}
@@ -191,9 +227,9 @@ RUN export head=$(cat /tmp/git/HEAD | cut -d' ' -f2) && \
     export hash=$(cat /tmp/git/${head}); else export hash=${head}; fi && \
     echo "${hash}" > ${EREG_HOME}/repo_version && rm -rf /tmp/git
 
-# Set permissions of app files
-RUN chmod -R ug+rw,o+r ${EREG_HOME}
-RUN chmod -R ug+rw,o+r ${EREG_DATA}
+# Set minimum required file permissions
+RUN chmod -R u=rw,g=rw,o=r ${EREG_HOME} && \
+    chmod -R u=rw,g=rw,o=r ${EREG_DATA}
 
 
 
@@ -202,81 +238,61 @@ RUN chmod -R ug+rw,o+r ${EREG_DATA}
 ####################################
 
 # Create image
-FROM ereg_builder AS ereg-core
+FROM ereg_builder AS ereg_core
 
 # Set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Renew EREG ARGs
+# Renew ARGs
 ARG EREG_HOME
 ARG EREG_DATA
-
-# Renew USER ARGs
-ARG USR_NAME
-ARG GRP_NAME
-
-# Renew CRON ARGs
 ARG D_CRON_TIME_STR
 ARG R_CRON_TIME_STR
 
 # Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
-        # to check container health
-        redis-tools && \
+RUN apt-get --quiet --assume-yes update && \
+    apt-get --quiet --assume-yes --no-install-recommends install \
+        # to configure locale
+        locales && \
     rm -rf /var/lib/apt/lists/*
 
-# Set read-only environment variables
-ENV EREG_HOME=${EREG_HOME}
-ENV EREG_DATA=${EREG_DATA}
+# Configure Locale en_US.UTF-8
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    sed -i -e 's/# es_US.UTF-8 UTF-8/es_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales
 
-# Set environment variables
-ENV D_CRON_TIME_STR=${D_CRON_TIME_STR}
-ENV R_CRON_TIME_STR=${R_CRON_TIME_STR}
+# Set locale
+ENV LC_ALL en_US.UTF-8
 
 # Definir comandos para descarga y calibración de pronósticos
 ARG DOWNLOAD_1_CMD="/usr/local/bin/python download_inputs.py --download real_time --re-check"
 ARG DOWNLOAD_2_CMD="/usr/local/bin/python download_inputs.py --download operational --re-check"
 ARG RUN_PYTHON_CMD="/usr/local/bin/python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor --ignore-plotting"
 
-# Crear archivo de configuración de CRON
+# Create CRON configuration file
 RUN printf "\n\
+SHELL=/bin/bash \n\
+BASH_ENV=/opt/utils/load-envvars \n\
+\n\
 \043 Download input data \n\
 ${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${DOWNLOAD_1_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
 ${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${DOWNLOAD_2_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
 \043 Run operational forecasts \n\
 ${R_CRON_TIME_STR}  cd ${EREG_HOME} && ${RUN_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
 \n" > ${EREG_HOME}/crontab.conf
-RUN chmod a+rw ${EREG_HOME}/crontab.conf
 
-# Crear archivo con variables de entorno
-RUN touch ${EREG_HOME}/crontab-envvars.txt \
- && chmod a+rw ${EREG_HOME}/crontab-envvars.txt
-
-# CRON toma variables de entorno desde /etc/environment,
-# para más info ver: https://askubuntu.com/a/700126
-RUN mv /etc/environment /etc/environment-old \
- && ln -s ${EREG_HOME}/crontab-envvars.txt /etc/environment
-
-# Setup CRON for root user
-RUN (cat ${EREG_HOME}/crontab.conf) | crontab -
-
-# Crear script de inicio.
+# Create startup/entrypoint script
 RUN printf "#!/bin/bash \n\
 set -e \n\
 \n\
 \043 Reemplazar tiempo ejecución de la descarga de los datos de entrada \n\
-crontab -l | sed \"/download_inputs.py/ s|^\S* \S* \S* \S* \S*|\$D_CRON_TIME_STR|g\" | crontab - \n\
-crontab -l | sed \"/run_operational_forecast.py/ s|^\S* \S* \S* \S* \S*|\$R_CRON_TIME_STR|g\" | crontab - \n\
+sed -i \"/download_inputs.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$D_CRON_TIME_STR|g\" /opt/utils/crontab.conf \n\
+crontab -l | sed \"/download_inputs.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$D_CRON_TIME_STR|g\" | crontab - \n\
+sed -i \"/run_operational_forecast.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$R_CRON_TIME_STR|g\" /opt/utils/crontab.conf \n\
+crontab -l | sed \"/run_operational_forecast.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$R_CRON_TIME_STR|g\" | crontab - \n\
 \n\
-\043 Copiar variables de entorno del contenedor a /etc/environment \n\
-xargs --null --max-args=1 --arg-file=/proc/1/environ > ${EREG_HOME}/crontab-envvars.txt \n\
-\n\
-\043 Ejecutar cron \n\
-cron -fL 15 \n\
-\n" > /startup.sh
-RUN chmod a+x /startup.sh
+exec \"\$@\" \n\
+\n" > /opt/utils/entrypoint
 
 # Create script to check container health
 RUN printf "#!/bin/bash\n\
@@ -288,15 +304,61 @@ then \n\
 else \n\
   exit 0 \n\
 fi \n\
-\n" > /check-healthy.sh
-RUN chmod a+x /check-healthy.sh
+\n" > /opt/utils/check-healthy
+
+# Set minimal permissions to the new scripts and files
+RUN chmod u=rw,g=r,o=r ${EREG_HOME}/crontab.conf
+
+# Set read-only environment variables
+ENV EREG_HOME=${EREG_HOME}
+ENV EREG_DATA=${EREG_DATA}
+
+# Set user-definable environment variables
+ENV D_CRON_TIME_STR=${D_CRON_TIME_STR}
+ENV R_CRON_TIME_STR=${R_CRON_TIME_STR}
+
+# Declare optional environment variables
+ENV REDIS_HOST=localhost
+
+
+
+#####################################
+## Stage 6: Setup EREG final image ##
+#####################################
+
+# Create image
+FROM ereg_core AS ereg-root
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Renew ARGs
+ARG EREG_HOME
+
+# Setup CRON for root user
+RUN (cat ${EREG_HOME}/crontab.conf) | crontab -
+
+# Create standard directories used for specific types of user-specific data, as defined 
+# by the XDG Base Directory Specification. For when "docker run --user uid:gid" is used.
+# OBS: don't forget to add --env HOME=/home when running the container.
+RUN mkdir -p /home/.local/share && \
+    mkdir -p /home/.cache && \
+    mkdir -p /home/.config
+# Set permissions, for when "docker run --user uid:gid" is used
+RUN chmod -R a+rwx /home/.local /home/.cache /home/.config
+
+# Add Tini (https://github.com/krallin/tini#using-tini)
+ENTRYPOINT [ "/usr/bin/tini", "-g", "--", "/opt/utils/entrypoint" ]
 
 # Run your program under Tini (https://github.com/krallin/tini#using-tini)
-CMD [ "bash", "-c", "/startup.sh" ]
+CMD [ "cron", "-fL", "15" ]
 # or docker run your-image /your/program ...
 
-# Verificar si hubo alguna falla en la ejecución del replicador
-HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /check-healthy.sh
+# Configurar verificación de la salud del contenedor
+HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /opt/utils/check-healthy
+
+# Set work directory
+WORKDIR ${EREG_HOME}
 
 
 
@@ -307,7 +369,7 @@ HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /check-healthy.sh
 
 # CONSTRUIR IMAGEN (CORE)
 # docker build --force-rm \
-#   --target ereg-core \
+#   --target ereg-root \
 #   --tag ghcr.io/danielbonhaure/ereg_calibracion_combinacion:ereg-core-v1.0 \
 #   --build-arg D_CRON_TIME_STR="0 0 15,16 * *" \
 #   --build-arg R_CRON_TIME_STR="0 0 17 * *" \
