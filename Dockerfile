@@ -294,7 +294,7 @@ crontab -l | sed \"/run_operational_forecast.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|
 exec \"\$@\" \n\
 \n" > /opt/utils/entrypoint
 
-# Create script to check container health
+# Create script to check the container's health
 RUN printf "#!/bin/bash\n\
 if [ \$(find ${EREG_HOME} -type f -name '*.pid' 2>/dev/null | wc -l) != 0 ] || \n\
    [ \$(echo 'KEYS *' | redis-cli -h \${REDIS_HOST} 2>/dev/null | grep -c ereg) != 0 ] && \n\
