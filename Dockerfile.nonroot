@@ -89,8 +89,9 @@ RUN echo "${USR_NAME}:${USER_PWD}" | chpasswd
 # Change the owner of the USR_DIRS folder
 RUN chown -R ${USR_NAME}:${GRP_NAME} ${USR_DIRS}
 
-# Set permissions of files in USR_DIRS folder
-RUN chmod -R u=rw,g=r,o=r ${USR_DIRS}
+# Set permissions of files and folders in the USR_DIRS directory/ies
+RUN find ${USR_DIRS} -type f -exec chmod -R u=rw,g=rw,o=r -- {} + && \
+    find ${USR_DIRS} -type d -exec chmod -R u=rwx,g=rwx,o=rx -- {} +
 
 # Setup cron (if necessary)
 RUN count=$(find ${USR_DIRS} -type f -name ${CRONTAB} | wc -l) && [ ${count} = 1 ] \

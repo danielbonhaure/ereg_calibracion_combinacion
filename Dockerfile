@@ -227,9 +227,9 @@ RUN export head=$(cat /tmp/git/HEAD | cut -d' ' -f2) && \
     export hash=$(cat /tmp/git/${head}); else export hash=${head}; fi && \
     echo "${hash}" > ${EREG_HOME}/repo_version && rm -rf /tmp/git
 
-# Set minimum required file permissions
-RUN chmod -R u=rw,g=rw,o=r ${EREG_HOME} && \
-    chmod -R u=rw,g=rw,o=r ${EREG_DATA}
+# Set minimum required permissions for files and folders
+RUN find ${EREG_HOME} ${EREG_DATA} -type f -exec chmod -R u=rw,g=rw,o=r -- {} + && \
+    find ${EREG_HOME} ${EREG_DATA} -type d -exec chmod -R u=rwx,g=rwx,o=rx -- {} +
 
 
 
