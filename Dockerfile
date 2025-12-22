@@ -286,9 +286,9 @@ RUN printf "#!/bin/bash \n\
 set -e \n\
 \n\
 \043 Reemplazar tiempo ejecución de la descarga de los datos de entrada \n\
-sed -i \"/download_inputs.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$D_CRON_TIME_STR|g\" /opt/utils/crontab.conf \n\
+sed -i \"/download_inputs.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$D_CRON_TIME_STR|g\" ${EREG_HOME}/crontab.conf \n\
 crontab -l | sed \"/download_inputs.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$D_CRON_TIME_STR|g\" | crontab - \n\
-sed -i \"/run_operational_forecast.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$R_CRON_TIME_STR|g\" /opt/utils/crontab.conf \n\
+sed -i \"/run_operational_forecast.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$R_CRON_TIME_STR|g\" ${EREG_HOME}/crontab.conf \n\
 crontab -l | sed \"/run_operational_forecast.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$R_CRON_TIME_STR|g\" | crontab - \n\
 \n\
 exec \"\$@\" \n\
