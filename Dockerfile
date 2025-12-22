@@ -275,10 +275,10 @@ SHELL=/bin/bash \n\
 BASH_ENV=/opt/utils/load-envvars \n\
 \n\
 \043 Download input data \n\
-${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${DOWNLOAD_1_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
-${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${DOWNLOAD_2_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
+${D_CRON_TIME_STR}  (cd ${EREG_HOME} && ${DOWNLOAD_1_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) \n\
+${D_CRON_TIME_STR}  (cd ${EREG_HOME} && ${DOWNLOAD_2_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) \n\
 \043 Run operational forecasts \n\
-${R_CRON_TIME_STR}  cd ${EREG_HOME} && ${RUN_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
+${R_CRON_TIME_STR}  (cd ${EREG_HOME} && ${RUN_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) \n\
 \n" > ${EREG_HOME}/crontab.conf
 
 # Create startup/entrypoint script
