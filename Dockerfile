@@ -262,7 +262,7 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales
 
 # Set locale
-ENV LC_ALL en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # Definir comandos para descarga y calibración de pronósticos
 ARG DOWNLOAD_1_CMD="/usr/local/bin/python download_inputs.py --download real_time --re-check"
