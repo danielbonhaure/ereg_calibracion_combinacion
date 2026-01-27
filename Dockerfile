@@ -275,10 +275,10 @@ SHELL=/bin/bash \n\
 BASH_ENV=/opt/utils/load-envvars \n\
 \n\
 \043 Download input data \n\
-${D_CRON_TIME_STR}  (cd ${EREG_HOME} && ${DOWNLOAD_1_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) \n\
-${D_CRON_TIME_STR}  (cd ${EREG_HOME} && ${DOWNLOAD_2_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) \n\
+${D_CRON_TIME_STR}  (cd ${EREG_HOME} && ${DOWNLOAD_1_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) #JOB_GP_D \n\
+${D_CRON_TIME_STR}  (cd ${EREG_HOME} && ${DOWNLOAD_2_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) #JOB_GP_D \n\
 \043 Run operational forecasts \n\
-${R_CRON_TIME_STR}  (cd ${EREG_HOME} && ${RUN_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) \n\
+${R_CRON_TIME_STR}  (cd ${EREG_HOME} && ${RUN_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1) #JOB_ID_R \n\
 \n" > ${EREG_HOME}/crontab.conf
 
 # Create startup/entrypoint script
@@ -286,10 +286,11 @@ RUN printf "#!/bin/bash \n\
 set -e \n\
 \n\
 \043 Reemplazar tiempo ejecución de la descarga de los datos de entrada \n\
-sed -i \"/download_inputs.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$D_CRON_TIME_STR|g\" ${EREG_HOME}/crontab.conf \n\
-crontab -l | sed \"/download_inputs.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$D_CRON_TIME_STR|g\" | crontab - \n\
-sed -i \"/run_operational_forecast.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$R_CRON_TIME_STR|g\" ${EREG_HOME}/crontab.conf \n\
-crontab -l | sed \"/run_operational_forecast.py/ s|^\d\S+\s\S+\s\S+\s\S+\s\S+\s|\$R_CRON_TIME_STR|g\" | crontab - \n\
+declare CRON_REGEX=\"^([[:graph:]]+[[:space:]]+){4}[[:graph:]]+\" \n\
+sed -iE \"/JOB_GP_D/ s|\${CRON_REGEX}|\${D_CRON_TIME_STR}|g\" ${EREG_HOME}/crontab.conf \n\
+crontab -l | sed -E \"/JOB_GP_D/ s|\${CRON_REGEX}|\${D_CRON_TIME_STR}|g\" | crontab - \n\
+sed -iE \"/JOB_ID_R/ s|\${CRON_REGEX}|\${R_CRON_TIME_STR}|g\" ${EREG_HOME}/crontab.conf \n\
+crontab -l | sed -E \"/JOB_ID_R/ s|\${CRON_REGEX}|\${R_CRON_TIME_STR}|g\" | crontab - \n\
 \n\
 exec \"\$@\" \n\
 \n" > /opt/utils/entrypoint
