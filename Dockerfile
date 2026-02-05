@@ -287,9 +287,9 @@ set -e \n\
 \n\
 \043 Reemplazar tiempo ejecución de la descarga de los datos de entrada \n\
 declare CRON_REGEX=\"^([[:graph:]]+[[:space:]]+){4}[[:graph:]]+\" \n\
-sed -iE \"/JOB_GP_D/ s|\${CRON_REGEX}|\${D_CRON_TIME_STR}|g\" ${EREG_HOME}/crontab.conf \n\
+sed -i -E \"/JOB_GP_D/ s|\${CRON_REGEX}|\${D_CRON_TIME_STR}|g\" ${EREG_HOME}/crontab.conf \n\
 crontab -l | sed -E \"/JOB_GP_D/ s|\${CRON_REGEX}|\${D_CRON_TIME_STR}|g\" | crontab - \n\
-sed -iE \"/JOB_ID_R/ s|\${CRON_REGEX}|\${R_CRON_TIME_STR}|g\" ${EREG_HOME}/crontab.conf \n\
+sed -i -E \"/JOB_ID_R/ s|\${CRON_REGEX}|\${R_CRON_TIME_STR}|g\" ${EREG_HOME}/crontab.conf \n\
 crontab -l | sed -E \"/JOB_ID_R/ s|\${CRON_REGEX}|\${R_CRON_TIME_STR}|g\" | crontab - \n\
 \n\
 exec \"\$@\" \n\
