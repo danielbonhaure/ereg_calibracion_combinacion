@@ -3,6 +3,7 @@
 # Except this file
 !.git
 !*.yaml
+!*.yaml.tmpl
 !*.py
 setup.py
 setup_crontab.py
@@ -11,4 +12,3 @@ create_conda_env.sh
 !*.md
 !combined_models
 !updates
-!email.yaml.tmpl
