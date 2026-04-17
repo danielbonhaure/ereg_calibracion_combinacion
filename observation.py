@@ -47,7 +47,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out.data)},
                     coords={'time': time, lat_name: lat, lon_name: lon})
     #como el resampling trimestral toma el ultimo mes como parametro
-    var_out = ds[variable].resample(time='Q-' + last_month).mean(dim='time')
+    var_out = ds[variable].resample(time='QE-' + last_month).mean(dim='time')
     #selecciono trimestre de interes
     mes = datetime.datetime.strptime(last_month, '%b').month
     var_out = var_out.sel(time=np.logical_and(var_out['time.month'] == mes,
