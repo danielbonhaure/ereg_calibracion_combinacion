@@ -46,11 +46,13 @@ def main(args):
 
     message = "Processing Observations"
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
-    archivo = Path(PATH, cfg.get('folders').get('data').get('observations'),
+
+    obs_file = Path(PATH, cfg.get('folders').get('data').get('observations'),
                    'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz')
-    if archivo.is_file() and not args.OW:
+    
+    if obs_file.is_file() and not args.OW:
         if args.CV:
-            data = np.load(archivo)
+            data = np.load(obs_file)
             obs_dt = data['obs_dt']
             terciles = data['terciles']
             data.close()
@@ -74,14 +76,15 @@ def main(args):
             obs_dt = obs.remove_trend(obs_3m, args.CV) #Standardize and detrend observation
             terciles = obs.computo_terciles(obs_dt, args.CV) # Obtain tercile limits
             categoria_obs = obs.computo_categoria(obs_dt, terciles)  #Define observed category
-            np.savez(archivo, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,
+            np.savez(obs_file, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,
                      terciles=terciles, cat_obs=categoria_obs, obs_3m=obs_3m)
-            cfg.set_correct_group_to_file(archivo)  # Change group of file
+            cfg.set_correct_group_to_file(obs_file)  # Change group of file
+    
     if np.logical_not(args.CV):
-        archivo2 = Path(PATH, cfg.get('folders').get('data').get('observations'),
+        obs_file = Path(PATH, cfg.get('folders').get('data').get('observations'),
                         'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '_parameters.npz')
-        if archivo2.is_file() and not args.OW:
-            data = np.load(archivo2)
+        if obs_file.is_file() and not args.OW:
+            data = np.load(obs_file)
             obs_dt = data['obs_dt']
             terciles =data['terciles']
             data.close()
@@ -101,22 +104,22 @@ def main(args):
                                                                       coords['lon_e'])
             obs_dt = obs.remove_trend(obs_3m, args.CV) #Standardize and detrend observation
             terciles = obs.computo_terciles(obs_dt, args.CV) # Obtain tercile limits
-            np.savez(archivo2, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
+            np.savez(obs_file, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
                      terciles=terciles) #Save observed variables
-            cfg.set_correct_group_to_file(archivo2)  # Change group of file
+            cfg.set_correct_group_to_file(obs_file)  # Change group of file
 
     message = "Processing Models"
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 
     RUTA = Path(PATH, cfg.get('folders').get('data').get('calibrated_forecasts'))
     for it in modelos:
-        output = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
-                          calendar.month_abbr[args.IC[0]] + '_' + SSS + \
-                          '_gp_01_hind.npz')
         if args.CV:
-            if output.is_file() and not args.OW:
-                pass
-            else:
+
+            output = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
+                            calendar.month_abbr[args.IC[0]] + '_' + SSS + \
+                            '_gp_01_hind.npz')
+            
+            if not output.is_file() or args.OW:
                 if np.logical_and(it['nombre'] == 'CFSv2', args.IC[0] == 11):
                     modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
                                      it['latn'], it['lonn'], it['miembros'] + 4, \
@@ -137,8 +140,13 @@ def main(args):
                 pronos_dt = modelo.remove_trend(pronos, True)
                 for_terciles = modelo.computo_terciles(pronos_dt, True)
                 forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
+
                 message = f"obs_dt shape: {obs_dt.shape} pronos_dt shape: {pronos_dt.shape}"
                 print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
+                if obs_dt.shape[0] != pronos_dt.shape[0]:
+                    message = f"obs_dt: {obs_file} pronos_dt: {modelo.filename}"
+                    print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
+                
                 [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
                                                                    obs_dt,
                                                                    True)
@@ -151,18 +159,11 @@ def main(args):
                          forecasted_category=forecasted_category)
         else:
 
-            output2 = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
+            output = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
                           calendar.month_abbr[args.IC[0]] + '_' + SSS + \
                           '_gp_01_hind_parameters.npz')
-            if output2.is_file() and not args.OW:
-                pass
-            else:
-
-#                if output.is_file() and not args.OW:
-#                    data = np.load(output)
-#                    pdf_intensity = data['peso']
-#                    data.close()
-#                else:
+            
+            if not output.is_file() or args.OW:
                 if np.logical_and(it['nombre'] == 'CFSv2', args.IC[0] == 11):
                     modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
                                      it['latn'], it['lonn'], it['miembros'] + 4, \
@@ -184,8 +185,13 @@ def main(args):
                 pronos_dt = modelo.remove_trend(pronos, True)
                 for_terciles = modelo.computo_terciles(pronos_dt, True)
                 forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
+
                 message = f"obs_dt shape: {obs_dt.shape} pronos_dt shape: {pronos_dt.shape}"
                 print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
+                if obs_dt.shape[1] != pronos_dt.shape[1]:
+                    message = f"obs_dt: {obs_file} pronos_dt: {modelo.filename}"
+                    print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
+                
                 [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
                                                                        obs_dt,
                                                                        True)

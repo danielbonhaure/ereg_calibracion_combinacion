@@ -52,6 +52,7 @@ class Model(object):
         self.hind_end = hind_end
         self.ext = extension
         self.rt_ensembles = rt_ensamble
+        self.filename = f"{self.var_name}_Amon_{self.institution}-{self.name}_*.{self.ext}"
         message = f"Loading/processing model {self.name} from {self.institution}"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     #imprimir caracteristicas generales del modelo
@@ -72,7 +73,7 @@ class Model(object):
                         '{:02d}'.format(init_cond) + '_r*_*' +\
                         '{:02d}'.format(init_cond) + '-*' + '{:02d}'.format(
                             final_month) + '.' + self.ext
-
+        self.filename = file
         [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
                                                          self.lat_name, self.lon_name,
                                                          lats, latn, lonw, lone)
@@ -258,7 +259,7 @@ class Model(object):
         file = self.var_name + '_Amon_' + self.institution + '-' +\
                     self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
                 '_r' + '*' + self.ext
-
+        self.filename = file
         [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
                                                      self.lat_name, self.lon_name,
                                                      lats, latn, lonw, lone)
