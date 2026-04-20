@@ -23,9 +23,6 @@ CORES = mp.cpu_count()
 PATH = cfg.get("folders").get("download_folder")
 ruta = Path(PATH, cfg.get("folders").get("nmme").get("root"))
 hind_length = 30
-warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -69,9 +66,11 @@ class Observ(object):
 #methods
     def select_months(self, last_month, year_init, lats, latn, lonw, lone):
         """computes seasonal mean"""
-        message = "seasonal mean"
+        message = "Seasonal mean"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         file = Path(ruta, self.var_name + '_monthly_nmme_' + self.institution +'.nc')
+        message = f"Seasonal mean - file: {file}"
+        print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
         [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
                                                          self.lat_name,
                                                          self.lon_name, lats,
@@ -149,7 +148,7 @@ class Observ(object):
 
     def computo_terciles(self, observation, CV_opt):
         """obtains terciles limits"""
-        message = "observed terciles limits"
+        message = "Observed terciles limits"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         ntimes = observation.shape[0]
         if CV_opt: #validacion cruzada ventana 1 anio
@@ -195,7 +194,7 @@ class Observ(object):
 
     def computo_quintiles(self, observation, CV_opt):
         """obtains quintiles limits"""
-        message = "observed quintiles limits"
+        message = "Observed quintiles limits"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         ntimes = observation.shape[0]
         if CV_opt: #validacion cruzada ventana 1 anio

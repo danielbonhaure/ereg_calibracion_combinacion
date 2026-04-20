@@ -47,6 +47,7 @@ def main(args):
     message = "Processing Observations"
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 
+    obs_dt = None
     obs_file = Path(PATH, cfg.get('folders').get('data').get('observations'),
                    'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz')
     
@@ -73,7 +74,11 @@ def main(args):
                                                              coords['lat_n'],
                                                              coords['lon_w'],
                                                              coords['lon_e'])
+            message = f"Processing Observations - obs_dt shape 1: {obs_3m.shape}"
+            print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
             obs_dt = obs.remove_trend(obs_3m, args.CV) #Standardize and detrend observation
+            message = f"Processing Observations - obs_dt shape 2: {obs_dt.shape}"
+            print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
             terciles = obs.computo_terciles(obs_dt, args.CV) # Obtain tercile limits
             categoria_obs = obs.computo_categoria(obs_dt, terciles)  #Define observed category
             np.savez(obs_file, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,
@@ -102,7 +107,11 @@ def main(args):
                                                                       coords['lat_n'],
                                                                       coords['lon_w'],
                                                                       coords['lon_e'])
+            message = f"Processing Observations - obs_dt shape 1: {obs_3m.shape}"
+            print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
             obs_dt = obs.remove_trend(obs_3m, args.CV) #Standardize and detrend observation
+            message = f"Processing Observations - obs_dt shape 2: {obs_dt.shape}"
+            print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
             terciles = obs.computo_terciles(obs_dt, args.CV) # Obtain tercile limits
             np.savez(obs_file, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
                      terciles=terciles) #Save observed variables
@@ -141,11 +150,10 @@ def main(args):
                 for_terciles = modelo.computo_terciles(pronos_dt, True)
                 forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
 
-                message = f"obs_dt shape: {obs_dt.shape} pronos_dt shape: {pronos_dt.shape}"
+                message = f"Processing Models - obs_dt: {obs_file} pronos_dt: {modelo.filename}"
                 print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
-                if obs_dt.shape[0] != pronos_dt.shape[0]:
-                    message = f"obs_dt: {obs_file} pronos_dt: {modelo.filename}"
-                    print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
+                message = f"Processing Models - obs_dt shape: {obs_dt.shape} pronos_dt shape: {pronos_dt.shape}"
+                print(message) if not cfg.get('use_logger') else cfg.logger.debug(message)
                 
                 [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
                                                                    obs_dt,
