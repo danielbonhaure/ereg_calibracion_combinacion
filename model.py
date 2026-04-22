@@ -22,7 +22,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     cfg.report_input_file_used(archivo)
     # continuar ejecución
     dataset = xr.open_mfdataset(str(archivo), engine='scipy', combine='by_coords',
-                                decode_times=False)
+                                join='outer', decode_times=False)
     pivot = datetime.datetime(1960, 1, 1)
     time_in_months = dataset['S'].values 
     S = [pivot + DateOffset(months=int(x), days=5) for x in dataset['S']]
