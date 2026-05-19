@@ -24,29 +24,34 @@ import shutil
 from script import ScriptControl
 
 
+NO_YEAR, NO_MONTH = 0, 0
+
+now = datetime.datetime.now()
 cfg = configuration.Config.Instance()
 
 
 def parse_args() -> argparse.Namespace:
 
-  now = datetime.datetime.now()
-
   parser = argparse.ArgumentParser(description='Download input data')
 
   parser.add_argument('--download', nargs='+', default=['all'],
-    choices=['hindcast','operational','real_time','observation','all'], 
-    help='Indicates which input data should be downloaded')
-  parser.add_argument('--year', type=int, default=now.year,
-    help='Indicates input data of which years should be downloaded for operational and real-time execution')
-  parser.add_argument('--month', type=int, default=now.month,
-    help='Indicates input data of which months should be downloaded for real-time execution')
+    choices=['hindcast','real_time','operational','observation','verification','all'], 
+    help='It indicates what input data should be downloaded, i.e., the execution mode.')
+  parser.add_argument('--year', type=int, default=NO_YEAR,
+    help='It indicates the year from which the downloaded input data should be. ' +
+         'Used in hindcast, real-time and operational execution modes. ' +
+         'Ignored in observation and verification execution modes.')
+  parser.add_argument('--month', type=int, default=NO_MONTH,
+    help='It indicates the month from which the downloaded input data should be. ' +
+         'Used in hindcast and real-time execution modes. ' +
+         'Ignored in operational, observation and verification execution modes.')
   parser.add_argument('--re-check', action='store_true', dest='recheck',
-    help='Indicates if previously downloaded files must be checked or not')
+    help='It indicates if previously downloaded files must be checked or not.')
   parser.add_argument('--re-download', action='store_true', dest='redownload',
-    help='Indicates if previously downloaded files must be downloaded again')
+    help='It indicates if previously downloaded files must be downloaded again.')
   parser.add_argument('--models', nargs='+', default=[],
     choices=[item[0] for item in cfg.get('models')[1:]],
-    help='Indicates which models should be considered when downloading input files')
+    help='It indicates which models should be considered when downloading input files.')
 
   return parser.parse_args()
 
@@ -118,7 +123,8 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
             DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
             yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-                   'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'hindcast', 'VARIABLE': variable}
+                   'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'hindcast', 'VARIABLE': variable,
+                   'YEAR': year, 'MONTH': month}
         if model_data.hindcast_end < 2020:
           if recheck:
             cfg.logger.info(f'Checking real time files (used as hindcast) for: model={model_data.model}, variable={variable}, member={member}')
@@ -133,12 +139,14 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
               FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
               DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
               yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-                     'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'real_time', 'VARIABLE': variable}
+                     'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'real_time', 'VARIABLE': variable,
+                     'YEAR': year, 'MONTH': month}
 
 
 def links_to_download_operational(df_modelos, year, recheck, redownload):
+  #
+  year = now.year if year == NO_YEAR else year
   # 
-  now = datetime.datetime.now()
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.rt_members+1, 1):
@@ -154,10 +162,14 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
           DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
           yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-                 'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'operational', 'VARIABLE': variable}
+                 'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'operational', 'VARIABLE': variable,
+                 'YEAR': year, 'MONTH': month}
 
 
 def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
+  #
+  year = now.year if year == NO_YEAR else year
+  month = now.month if month == NO_MONTH else month
   # 
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
@@ -173,7 +185,8 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
         DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
         yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-               'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'real_time', 'VARIABLE': variable}
+               'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'real_time', 'VARIABLE': variable,
+               'YEAR': year, 'MONTH': month}
 
 
 def links_to_download_observation(recheck, redownload):
@@ -185,19 +198,22 @@ def links_to_download_observation(recheck, redownload):
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.CPC-CMAP-URD/.1x1_7922/.prate/data.nc"
   DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'prec', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'prec'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'prec',
+         'YEAR': NO_YEAR, 'MONTH': NO_MONTH}
   #
   FILENAME = "tref_monthly_nmme_ghcn_cams.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.GHCN_CAMS/.1x1_4822/.t2m/data.nc"
   DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'tref', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'tref'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'tref',
+         'YEAR': NO_YEAR, 'MONTH': NO_MONTH}
   #
   FILENAME = "lsmask.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.LSMASK/.land/data.nc"
   DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'land', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'land'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'land',
+         'YEAR': NO_YEAR, 'MONTH': NO_MONTH}
 
 
 def links_to_download_observation_for_verification(recheck, redownload):
@@ -209,18 +225,19 @@ def links_to_download_observation_for_verification(recheck, redownload):
   DOWNLOAD_URL = "https://downloads.psl.noaa.gov/Datasets/cmap/std/precip.mon.mean.nc"
   DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'precip', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'precip'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'verification', 'VARIABLE': 'precip',
+         'YEAR': NO_YEAR, 'MONTH': NO_MONTH}
   #
   FILENAME = "air.mon.mean.nc"
   DOWNLOAD_URL = "https://downloads.psl.noaa.gov/Datasets/ghcncams/air.mon.mean.nc"
   DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'air', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'air'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'verification', 'VARIABLE': 'air',
+         'YEAR': NO_YEAR, 'MONTH': NO_MONTH}
 
 
 def modify_downloaded_file_if_needed(downloaded_file):
   #
-  now = datetime.datetime.now()
   tempfile = str(downloaded_file).replace('.nc', '_TMP.nc')
   #
   filename = 'prec_monthly_nmme_cpc.nc'
@@ -322,7 +339,7 @@ if __name__ == "__main__":
     df_modelos = df_modelos.query(f'model in {args.models}')
 
   # GENERAR LINKS DE DESCARGA
-  df_links = pd.DataFrame(columns=['FILENAME','DOWNLOAD_URL','DOWNLOADED','TYPE'])
+  df_links = pd.DataFrame(columns=['FILENAME','DOWNLOAD_URL','DOWNLOADED','TYPE','YEAR','MONTH'])
   if any(item in ['hindcast', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_hindcast(df_modelos, args.recheck, args.redownload)
@@ -333,8 +350,6 @@ if __name__ == "__main__":
     start = time.time()
     links = links_to_download_operational(df_modelos, args.year, args.recheck, args.redownload)
     df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
-    obs_links = links_to_download_observation_for_verification(args.recheck, args.redownload)
-    df_links = pd.concat([df_links, pd.DataFrame.from_dict(obs_links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}operational links: {round(end - start, 2)} -> year: {args.year}')
   if any(item in ['real_time', 'all'] for item in args.download):
@@ -349,7 +364,22 @@ if __name__ == "__main__":
     df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}observation links: {round(end - start, 2)}')
+  if any(item in ['verification', 'all'] for item in args.download):
+    start = time.time()
+    links = links_to_download_observation_for_verification(args.recheck, args.redownload)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
+    end = time.time()
+    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}verification links: {round(end - start, 2)}')
 
+  # FILTRAR AÑOS CUANDO SEA NECESARIO (IGNORAR ARCHIVOS QUE NO ESPECÍFICOS PARA UN AÑO EN PARTICULAR)
+  if args.year != NO_YEAR:
+    df_links = df_links.query('YEAR == @args.year or YEAR == @NO_YEAR')
+  
+  # FILTRAR MESES CUANDO SEA NECESARIO (IGNORAR ARCHIVOS QUE NO ESPECÍFICOS PARA UN MES EN PARTICULAR)
+  if args.month != NO_MONTH:
+    df_links = df_links.query('MONTH == @args.month or MONTH == @NO_MONTH')
+
+  # INFORMACIÓN SITUACIÓN FINAL
   total_files = df_links['DOWNLOADED'].count()
   n_downloaded_files = df_links['DOWNLOADED'].sum()
   n_files_to_download = total_files - n_downloaded_files
@@ -366,6 +396,7 @@ if __name__ == "__main__":
     for row in df_links.query('DOWNLOADED == False').itertuples():
       progress_bar.report_advance(0)
       try:
+        cfg.logger.info(f'Archivo: {row.FILENAME} -- URL: {row.DOWNLOAD_URL}')
         download_file(row.DOWNLOAD_URL, row.FILENAME, row.VARIABLE)
       except Exception as e:
         progress_bar.clear_line()
