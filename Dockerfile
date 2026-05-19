@@ -50,7 +50,7 @@ RUN apt-get --quiet --assume-yes update && \
     apt-get --quiet --assume-yes upgrade && \
     apt-get --quiet --assume-yes --no-install-recommends install \
         build-essential \
-        # some project dependencies \
+        # some project dependencies
         cdo nco \
         # to install numpy dependencies (ninja and patchelf)
         cmake automake \
@@ -100,7 +100,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get --quiet --assume-yes update && \
     apt-get --quiet --assume-yes upgrade && \
     apt-get --quiet --assume-yes --no-install-recommends install \
-        # some project dependencies \
+        # some project dependencies
         cdo nco \
         # to be able to use cartopy (Python)
         proj-bin libproj-dev libgeos-dev && \
