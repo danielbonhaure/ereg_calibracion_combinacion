@@ -66,6 +66,7 @@ RUN python3 -m pip install --upgrade pip && \
     python3 -m pip wheel --no-cache-dir --no-deps \
     --wheel-dir /usr/src/app/wheels \
         numpy \
+        pandas \
         dask \
         xarray \
         scipy \
