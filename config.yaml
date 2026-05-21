@@ -56,7 +56,7 @@ coords:
 # members            -> Number of members in hindcast mode
 # leadtimes          -> Number of leadtimes
 # hindcast_begin     -> Year begining hindcast period
-# hindcast_end       -> Year end hindcast period
+# hindcast_end       -> Year end hindcast period (only years with no missing data)
 # file_end           -> End of forecast file (nc or nc4)
 # rt_members         -> Number of members in hindcast mode
 models:
