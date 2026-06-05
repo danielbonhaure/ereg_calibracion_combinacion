@@ -209,10 +209,10 @@ def main(args):
                                                                   obs_dt,
                                                                   args.CV)
 
-                np.savez(output2, lats=lats, lons=lons, pronos_dt=pronos_dt,
+                np.savez(output, lats=lats, lons=lons, pronos_dt=pronos_dt,
                              a1=a1, b1=b1, a2=a2, b2=b2, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
                              peso=pdf_intensity)
-                cfg.set_correct_group_to_file(output2)  # Change group of file
+                cfg.set_correct_group_to_file(output)  # Change group of file
 
 
 # ==================================================================================================
